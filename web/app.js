@@ -417,6 +417,14 @@ window.muInstallAudio = function () {
         if (typeof Module !== 'undefined' && Module._mu_net_push_disconnect) {
           Module._mu_net_push_disconnect();
         }
+      } else if (msg.type === 'REALM_SWITCHED' || msg.type === 'DIFFICULTY_SET') {
+        console.log('[SoloBridge] Realm switched confirmed by worker:', msg.mode);
+        if (msg.mode !== undefined) {
+          currentRealm = msg.mode;
+          if (window.muUpdateRealmBadge) {
+            window.muUpdateRealmBadge(msg.mode);
+          }
+        }
       }
     };
 
@@ -439,6 +447,13 @@ window.muInstallAudio = function () {
     },
     connect: function (realmMode) {
       console.log('[SoloBridge] Client requested GameServer connect for realm:', realmMode);
+      if (realmMode === undefined || realmMode === null || realmMode < 0 || realmMode > 2) {
+        realmMode = 0;
+      }
+      currentRealm = realmMode;
+      if (window.muUpdateRealmBadge) {
+        window.muUpdateRealmBadge(realmMode);
+      }
       if (!worker) {
         pendingConnectRealm = realmMode;
         initServerWorker(realmMode);
@@ -448,17 +463,14 @@ window.muInstallAudio = function () {
         pendingConnectRealm = realmMode;
         return;
       }
-      if (currentRealm !== realmMode) {
-        currentRealm = realmMode;
-        const existingSaves = loadSavedContainer(realmMode);
-        worker.postMessage({
-          action: 'SWITCH_REALM',
-          payload: {
-            mode: realmMode,
-            saves: existingSaves
-          }
-        });
-      }
+      const existingSaves = loadSavedContainer(realmMode);
+      worker.postMessage({
+        action: 'SWITCH_REALM',
+        payload: {
+          mode: realmMode,
+          saves: existingSaves
+        }
+      });
       worker.postMessage({
         action: 'CONNECT_PLAYER',
         payload: { ip: '127.0.0.1' }

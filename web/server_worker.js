@@ -99,6 +99,26 @@ async function exportEncryptedSaves() {
     const rawFiles = readVirtualSaveFiles();
     const fileCount = Object.keys(rawFiles).length;
 
+    // SubtleCrypto requires a Secure Context (HTTPS or localhost/127.0.0.1).
+    // On LAN IPs (e.g. http://192.168.x.x), self.crypto.subtle is undefined by browser policy.
+    const hasSubtle = typeof self !== 'undefined' && self.crypto && self.crypto.subtle;
+
+    if (!hasSubtle) {
+        log('[Vault] Web Crypto API (SubtleCrypto) unavailable in non-secure context (LAN/HTTP IP). Saving in unencrypted vault format.', '#fbbf24');
+        const jsonStr = JSON.stringify(rawFiles);
+        const encoded = new TextEncoder().encode(jsonStr);
+        let binary = '';
+        for (let i = 0; i < encoded.length; i++) binary += String.fromCharCode(encoded[i]);
+        return {
+            magic: VAULT_MAGIC,
+            version: 1,
+            encrypted: false,
+            algorithm: "plain-base64",
+            timestamp: Date.now(),
+            filesCount: fileCount,
+            payload: btoa(binary)
+        };
+    }
 
     try {
         const key = await getVaultKey();
@@ -157,7 +177,24 @@ async function importEncryptedSaves(container) {
             throw new Error(`Unknown file format (expected header ${VAULT_MAGIC})`);
         }
 
-        // 2. Decode ciphertext bytes
+        // 2. Unencrypted vault container (saved from LAN / non-secure context)
+        if (container.encrypted === false) {
+            log('[Vault] Restoring unencrypted vault payload...', '#34d399');
+            const binary = atob(container.payload);
+            const bytes = new Uint8Array(binary.length);
+            for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+            const jsonStr = new TextDecoder().decode(bytes);
+            const rawFiles = JSON.parse(jsonStr);
+            return writeVirtualSaveFiles(rawFiles);
+        }
+
+        // 3. Encrypted vault container - check if crypto.subtle is available
+        const hasSubtle = typeof self !== 'undefined' && self.crypto && self.crypto.subtle;
+        if (!hasSubtle) {
+            throw new Error("This save is AES-256 encrypted, but Web Cryptography API is unavailable over non-secure HTTP. Please use http://127.0.0.1:8088/ or HTTPS.");
+        }
+
+        // 4. Decode ciphertext bytes
         const cipherBinary = atob(container.payload);
         const cipherBytes = new Uint8Array(cipherBinary.length);
         for (let i = 0; i < cipherBinary.length; i++) {

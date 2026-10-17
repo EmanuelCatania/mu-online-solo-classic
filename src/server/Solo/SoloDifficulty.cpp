@@ -80,6 +80,7 @@ void SoloDifficulty_Apply(SOLO_DIFFICULTY_MODE mode)
 		gServerInfo.m_ItemDropRate[i] = g_SoloDifficulty.itemDropRate;
 		gServerInfo.m_MoneyAmountDropRate[i] = g_SoloDifficulty.zenDropRate;
 		gServerInfo.m_CommandResetLevel[i] = g_SoloDifficulty.resetLevel;
+		gServerInfo.m_CommandGrandResetReset[i] = g_SoloDifficulty.grandResetResets;
 	}
 
 	// Strictly disable player-to-player trade

@@ -4,6 +4,7 @@
 #include "JSProtocol.h"
 #include "DefaultClassInfo.h"
 #include "Warehouse.h"
+#include "CommandManager.h"
 #include "ServerDisplayer.h"
 #include "Log.h"
 #include "Util.h"
@@ -33,6 +34,12 @@ struct SOLO_SAVED_CHARACTER_HEADER
 	BYTE Class;
 	BYTE CtlCode;
 	BYTE equipment[60];
+};
+
+struct SOLO_CHARACTER_EXTENSION
+{
+	DWORD Reset;
+	DWORD GrandReset;
 };
 
 struct SOLO_ACCOUNT_DATA
@@ -66,6 +73,28 @@ static bool LoadAccountData(const char* account, SOLO_ACCOUNT_DATA& data)
 	std::ifstream file(path, std::ios::binary);
 	if (!file.is_open())
 	{
+		// Fallback: in single-player solo mode, if the user typed a different account name
+		// look for any existing account_*.dat file in saves directory.
+		std::error_code ec;
+		for (const auto& entry : fs::directory_iterator(g_SaveDirectory, ec))
+		{
+			if (!entry.is_regular_file()) continue;
+			std::string fname = entry.path().filename().string();
+			if (fname.rfind("account_", 0) == 0 && fname.rfind(".dat") == fname.length() - 4)
+			{
+				std::ifstream fallbackFile(entry.path(), std::ios::binary);
+				if (fallbackFile.is_open())
+				{
+					fallbackFile.read(reinterpret_cast<char*>(&data), sizeof(data));
+					if (fallbackFile.gcount() == sizeof(data))
+					{
+						LogAdd(LOG_BLUE, "[SoloDataServer] Using existing account save '%s' for login '%s'", fname.c_str(), account);
+						std::memcpy(data.account, account, sizeof(data.account));
+						return true;
+					}
+				}
+			}
+		}
 		return false;
 	}
 
@@ -272,6 +301,8 @@ void SoloDataServer_ProcessPacket(BYTE* lpMsg, int size)
 						if (charFile.is_open())
 						{
 							charFile.write(reinterpret_cast<const char*>(&initChar), sizeof(initChar));
+							SOLO_CHARACTER_EXTENSION ext = { 0, 0 };
+							charFile.write(reinterpret_cast<const char*>(&ext), sizeof(ext));
 						}
 
 						result = 1; // Success
@@ -387,8 +418,15 @@ void SoloDataServer_ProcessPacket(BYTE* lpMsg, int size)
 							pRecv.Reset = 0;
 							pRecv.GrandReset = 0;
 
-							LogAdd(LOG_GREEN, "[SoloDataServer] Loaded character: %s (Lv: %d, Map: %d, X: %d, Y: %d)",
-								lpSend->name, pRecv.Level, pRecv.Map, pRecv.X, pRecv.Y);
+							SOLO_CHARACTER_EXTENSION ext;
+							if (file.read(reinterpret_cast<char*>(&ext), sizeof(ext)) && file.gcount() == sizeof(ext))
+							{
+								pRecv.Reset = ext.Reset;
+								pRecv.GrandReset = ext.GrandReset;
+							}
+
+							LogAdd(LOG_GREEN, "[SoloDataServer] Loaded character: %s (Lv: %d, Reset: %d, GrandReset: %d, Map: %d, X: %d, Y: %d)",
+								lpSend->name, pRecv.Level, pRecv.Reset, pRecv.GrandReset, pRecv.Map, pRecv.X, pRecv.Y);
 						}
 					}
 
@@ -401,11 +439,24 @@ void SoloDataServer_ProcessPacket(BYTE* lpMsg, int size)
 					auto* lpSave = reinterpret_cast<SDHP_CHARACTER_INFO_SAVE_SEND*>(lpMsg);
 
 					std::string charPath = GetCharacterFilePath(lpSave->name);
+
+					// Preserve existing extension if present
+					SOLO_CHARACTER_EXTENSION ext = { 0, 0 };
+					{
+						std::ifstream curFile(charPath, std::ios::binary);
+						if (curFile.is_open())
+						{
+							curFile.seekg(sizeof(SDHP_CHARACTER_INFO_SAVE_SEND));
+							curFile.read(reinterpret_cast<char*>(&ext), sizeof(ext));
+						}
+					}
+
 					std::ofstream file(charPath, std::ios::binary | std::ios::trunc);
 					if (file.is_open())
 					{
 						file.write(reinterpret_cast<const char*>(lpSave), sizeof(*lpSave));
-						LogAdd(LOG_BLUE, "[SoloDataServer] Saved character: %s", lpSave->name);
+						file.write(reinterpret_cast<const char*>(&ext), sizeof(ext));
+						LogAdd(LOG_BLUE, "[SoloDataServer] Saved character: %s (Reset: %d, GrandReset: %d)", lpSave->name, ext.Reset, ext.GrandReset);
 					}
 
 					// Update cached character info in account file
@@ -573,6 +624,96 @@ void SoloDataServer_ProcessPacket(BYTE* lpMsg, int size)
 
 				case 0x01: // Option data save
 				{
+					break;
+				}
+
+				case 0x02: // Reset info save (GDResetInfoSaveSend)
+				{
+					auto* lpSave = reinterpret_cast<SDHP_RESET_INFO_SAVE_SEND*>(lpMsg);
+					std::string charPath = GetCharacterFilePath(lpSave->name);
+
+					SOLO_CHARACTER_EXTENSION ext = { 0, 0 };
+					{
+						std::ifstream curFile(charPath, std::ios::binary);
+						if (curFile.is_open())
+						{
+							curFile.seekg(sizeof(SDHP_CHARACTER_INFO_SAVE_SEND));
+							curFile.read(reinterpret_cast<char*>(&ext), sizeof(ext));
+						}
+					}
+					ext.Reset = lpSave->Reset;
+
+					std::fstream file(charPath, std::ios::in | std::ios::out | std::ios::binary);
+					if (file.is_open())
+					{
+						file.seekp(sizeof(SDHP_CHARACTER_INFO_SAVE_SEND));
+						file.write(reinterpret_cast<const char*>(&ext), sizeof(ext));
+						LogAdd(LOG_BLUE, "[SoloDataServer] Saved Reset info for %s: %d", lpSave->name, ext.Reset);
+						if (g_SoloSaveEventCallback) g_SoloSaveEventCallback();
+					}
+					break;
+				}
+
+				case 0x03: // Grand Reset info save (GDGrandResetInfoSaveSend)
+				{
+					auto* lpSave = reinterpret_cast<SDHP_GRAND_RESET_INFO_SAVE_SEND*>(lpMsg);
+					std::string charPath = GetCharacterFilePath(lpSave->name);
+
+					SOLO_CHARACTER_EXTENSION ext = { 0, 0 };
+					ext.Reset = lpSave->Reset;
+					ext.GrandReset = lpSave->GrandReset;
+
+					std::fstream file(charPath, std::ios::in | std::ios::out | std::ios::binary);
+					if (file.is_open())
+					{
+						file.seekp(sizeof(SDHP_CHARACTER_INFO_SAVE_SEND));
+						file.write(reinterpret_cast<const char*>(&ext), sizeof(ext));
+						LogAdd(LOG_BLUE, "[SoloDataServer] Saved GrandReset info for %s: Reset=%d, GrandReset=%d", lpSave->name, ext.Reset, ext.GrandReset);
+						if (g_SoloSaveEventCallback) g_SoloSaveEventCallback();
+					}
+					break;
+				}
+			}
+			break;
+		}
+
+		case 0x05: // Command Manager (Reset / Grand Reset)
+		{
+			switch (subhead)
+			{
+				case 0x04: // Reset Command Request
+				{
+					auto* lpSend = reinterpret_cast<SDHP_COMMAND_RESET_SEND*>(lpMsg);
+
+					SDHP_COMMAND_RESET_RECV pRecv;
+					pRecv.header.set(0x05, 0x04, sizeof(pRecv));
+					pRecv.index = lpSend->index;
+					std::memcpy(pRecv.account, lpSend->account, sizeof(pRecv.account));
+					std::memcpy(pRecv.name, lpSend->name, sizeof(pRecv.name));
+					pRecv.ResetDay = 0;
+					pRecv.ResetWek = 0;
+					pRecv.ResetMon = 0;
+
+					LogAdd(LOG_BLUE, "[SoloDataServer] Processing /reset for [%s][%s]", lpSend->account, lpSend->name);
+					gCommandManager.DGCommandResetRecv(&pRecv);
+					break;
+				}
+
+				case 0x05: // Grand Reset Command Request
+				{
+					auto* lpSend = reinterpret_cast<SDHP_COMMAND_RESET_SEND*>(lpMsg);
+
+					SDHP_COMMAND_RESET_RECV pRecv;
+					pRecv.header.set(0x05, 0x05, sizeof(pRecv));
+					pRecv.index = lpSend->index;
+					std::memcpy(pRecv.account, lpSend->account, sizeof(pRecv.account));
+					std::memcpy(pRecv.name, lpSend->name, sizeof(pRecv.name));
+					pRecv.ResetDay = 0;
+					pRecv.ResetWek = 0;
+					pRecv.ResetMon = 0;
+
+					LogAdd(LOG_BLUE, "[SoloDataServer] Processing /grandreset for [%s][%s]", lpSend->account, lpSend->name);
+					gCommandManager.DGCommandGrandResetRecv(&pRecv);
 					break;
 				}
 			}
