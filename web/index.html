@@ -46,6 +46,384 @@
       </div>
     </div>
 
+    <!-- 40px Top Control Bar -->
+    <header id="muTopBar" class="mu-topbar" aria-label="Game Controls Bar">
+      <div class="mu-topbar-left">
+        <div class="mu-brand-box">
+          <span class="mu-brand-title">MU ONLINE</span>
+          <span class="mu-brand-sep">/</span>
+          <span class="mu-brand-desc">SOLO CLASSIC 0.97K</span>
+        </div>
+        <div class="mu-realm-badge realm-easy" id="muRealmBadge" title="Server Realm: Easy (300x EXP Rate, 150% Drops, Level 300 Reset)">
+          <span class="mu-realm-dot"></span>
+          <span class="mu-realm-label" id="muRealmLabel">EASY (300x)</span>
+        </div>
+      </div>
+
+      <div class="mu-topbar-right">
+        <!-- Save Game Button -->
+        <button id="muBtnSave" class="mu-top-btn" type="button" title="Save Game (Save progress right now)" aria-label="Save Game">
+          <svg class="mu-btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+            <polyline points="17 21 17 13 7 13 7 21"></polyline>
+            <polyline points="7 3 7 8 15 8"></polyline>
+          </svg>
+          <span class="mu-btn-text">Save</span>
+        </button>
+
+        <!-- Import Save Button -->
+        <button id="muBtnImport" class="mu-top-btn" type="button" title="Import Save (Loads save file and reloads game)" aria-label="Import Save">
+          <svg class="mu-btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+            <polyline points="7 10 12 15 17 10"></polyline>
+            <line x1="12" y1="15" x2="12" y2="3"></line>
+          </svg>
+          <span class="mu-btn-text">Import</span>
+        </button>
+        <input type="file" id="muSaveFileInput" accept=".musav,.json" style="display:none">
+
+        <!-- Export Save Button -->
+        <button id="muBtnExport" class="mu-top-btn" type="button" title="Export Save (Download backup save file)" aria-label="Export Save">
+          <svg class="mu-btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+            <polyline points="17 8 12 3 7 8"></polyline>
+            <line x1="12" y1="3" x2="12" y2="15"></line>
+          </svg>
+          <span class="mu-btn-text">Export</span>
+        </button>
+
+        <div class="mu-top-sep"></div>
+
+        <!-- Auto-Attack Play / Stop Toggle Button -->
+        <button id="muBtnAutoAttack" class="mu-top-btn mu-btn-auto" type="button" title="Start Auto-Attack (Hold RMB at Center)" aria-label="Auto-Attack Toggle">
+          <!-- Play Icon (idle) -->
+          <svg class="mu-btn-icon mu-icon-play" viewBox="0 0 24 24" fill="currentColor">
+            <polygon points="6 4 20 12 6 20 6 4"></polygon>
+          </svg>
+          <!-- Stop Icon (active) -->
+          <svg class="mu-btn-icon mu-icon-stop" viewBox="0 0 24 24" fill="currentColor" style="display:none;">
+            <rect x="5" y="5" width="14" height="14" rx="2"></rect>
+          </svg>
+          <span class="mu-btn-text" id="muAutoAttackText">Auto</span>
+        </button>
+
+        <!-- Game Guide & Info Button -->
+        <button id="muBtnInfo" class="mu-top-btn" type="button" title="Game Guide & Instructions (Controls, Commands, Server Rates)" aria-label="Game Guide">
+          <svg class="mu-btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="12" y1="16" x2="12" y2="12"></line>
+            <circle cx="12" cy="8" r="1.25" fill="currentColor" stroke="none"></circle>
+          </svg>
+          <span class="mu-btn-text">Info</span>
+        </button>
+
+        <!-- Fullscreen Button -->
+        <button id="muBtnFullscreen" class="mu-top-btn" type="button" title="Fullscreen (Toggle full screen)" aria-label="Fullscreen">
+          <!-- Enter Fullscreen -->
+          <svg class="mu-btn-icon mu-icon-fs-enter" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path>
+          </svg>
+          <!-- Exit Fullscreen -->
+          <svg class="mu-btn-icon mu-icon-fs-exit" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none;">
+            <path d="M4 14h6m0 0v6m0-6L3 21m17-7h-6m0 0v6m0-6l7 7M10 4v6m0 0H4m6 0L3 3m10 7h6m-6 0V4m0 6l7-7"></path>
+          </svg>
+        </button>
+      </div>
+    </header>
+
+    <!-- Floating Toast Notification -->
+    <div id="muToast" class="mu-toast" role="status" aria-live="polite"></div>
+
+    <!-- Game Guide & Info Modal Popup -->
+    <div id="muInfoModal" class="mu-modal" aria-hidden="true">
+      <div class="mu-modal-backdrop" id="muModalBackdrop"></div>
+      <div class="mu-modal-dialog">
+        <!-- Modal Header -->
+        <div class="mu-modal-header">
+          <div class="mu-modal-title-box">
+            <div class="mu-modal-icon-badge">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="12" y1="16" x2="12" y2="12"></line>
+                <circle cx="12" cy="8" r="1.25" fill="currentColor" stroke="none"></circle>
+              </svg>
+            </div>
+            <div>
+              <h2 class="mu-modal-title">MU Online Solo Classic Guide</h2>
+              <p class="mu-modal-subtitle">Version 0.97k &bull; Controls, Commands, Rates & Gameplay Tips</p>
+            </div>
+          </div>
+          <button id="muModalCloseBtn" class="mu-modal-close" type="button" aria-label="Close Guide">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
+        </div>
+
+        <!-- Navigation Tabs -->
+        <div class="mu-modal-tabs">
+          <button class="mu-tab-btn active" data-tab="tabControls">🎮 Controls</button>
+          <button class="mu-tab-btn" data-tab="tabCommands">📜 Chat Commands</button>
+          <button class="mu-tab-btn" data-tab="tabRealms">⚔️ Server Realms</button>
+          <button class="mu-tab-btn" data-tab="tabSaves">💾 Save System</button>
+          <button class="mu-tab-btn" data-tab="tabTips">💎 Upgrading & Tips</button>
+        </div>
+
+        <!-- Modal Scrollable Body -->
+        <div class="mu-modal-body">
+          <!-- Tab 1: Controls -->
+          <div id="tabControls" class="mu-tab-pane active">
+            <h3 class="mu-section-title">Essential Controls & Hotkeys</h3>
+            <div class="mu-guide-grid">
+              <div class="mu-guide-card">
+                <div class="mu-guide-card-head">Movement & Combat</div>
+                <ul class="mu-hotkey-list">
+                  <li><span class="mu-key-combo"><kbd>Left Click</kbd></span><span>Move, pick up items, interact with NPCs</span></li>
+                  <li><span class="mu-key-combo"><kbd>Right Click</kbd></span><span>Cast selected spell or combat skill</span></li>
+                  <li><span class="mu-key-combo"><kbd>Auto Button</kbd></span><span>Toggle AFK auto-attack (continuous combat skill)</span></li>
+                  <li><span class="mu-key-combo"><kbd>Ctrl</kbd> + <kbd>Click</kbd></span><span>Player vs Player (PvP) attack force mode</span></li>
+                </ul>
+              </div>
+
+              <div class="mu-guide-card">
+                <div class="mu-guide-card-head">Interface Windows</div>
+                <ul class="mu-hotkey-list">
+                  <li><span class="mu-key-combo"><kbd>C</kbd></span><span>Character Stats & Attributes Window</span></li>
+                  <li><span class="mu-key-combo"><kbd>I</kbd> or <kbd>V</kbd></span><span>Inventory & Equipment Window</span></li>
+                  <li><span class="mu-key-combo"><kbd>P</kbd></span><span>Party Management Window</span></li>
+                  <li><span class="mu-key-combo"><kbd>G</kbd></span><span>Guild Management Window</span></li>
+                  <li><span class="mu-key-combo"><kbd>Enter</kbd></span><span>Open Chat Bar / Command Input</span></li>
+                  <li><span class="mu-key-combo"><kbd>Esc</kbd></span><span>Options Menu / Close active dialogs</span></li>
+                </ul>
+              </div>
+
+              <div class="mu-guide-card">
+                <div class="mu-guide-card-head">Potions & Skill Hotkeys</div>
+                <ul class="mu-hotkey-list">
+                  <li><span class="mu-key-combo"><kbd>Q</kbd></span><span>Quick drink Health Potion (HP)</span></li>
+                  <li><span class="mu-key-combo"><kbd>W</kbd></span><span>Quick drink Mana Potion (MP)</span></li>
+                  <li><span class="mu-key-combo"><kbd>E</kbd></span><span>Quick drink Stamina / Antidote Potion</span></li>
+                  <li><span class="mu-key-combo"><kbd>Ctrl</kbd> + <kbd>Q/W/E</kbd></span><span>Assign hovered inventory potion to Q, W, or E</span></li>
+                  <li><span class="mu-key-combo"><kbd>1</kbd> .. <kbd>0</kbd></span><span>Activate assigned skill</span></li>
+                  <li><span class="mu-key-combo"><kbd>Ctrl</kbd> + <kbd>0-9</kbd></span><span>Bind highlighted skill to number hotkey</span></li>
+                </ul>
+              </div>
+
+              <div class="mu-guide-card">
+                <div class="mu-guide-card-head">Map, Loot & Camera</div>
+                <ul class="mu-hotkey-list">
+                  <li><span class="mu-key-combo"><kbd>Space</kbd></span><span>Pick up nearest dropped item or Zen</span></li>
+                  <li><span class="mu-key-combo"><kbd>Alt</kbd></span><span>Toggle / Highlight all item names on ground</span></li>
+                  <li><span class="mu-key-combo"><kbd>Tab</kbd></span><span>Toggle Minimap overlay radar</span></li>
+                  <li><span class="mu-key-combo"><kbd>M</kbd></span><span>Open Fast Move / Map Warp destination menu</span></li>
+                  <li><span class="mu-key-combo"><kbd>H</kbd></span><span>Open Event Timers (Blood Castle, Devil Square)</span></li>
+                  <li><span class="mu-key-combo"><kbd>F10</kbd> / <kbd>F11</kbd></span><span>Optional 3D Camera toggle / reset (Classic 2.5D fixed by default)</span></li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          <!-- Tab 2: Player Commands -->
+          <div id="tabCommands" class="mu-tab-pane">
+            <h3 class="mu-section-title">In-Game Chat Commands (Press Enter to type)</h3>
+            <p class="mu-section-sub">Type these commands directly into the in-game chat box to boost your solo progression.</p>
+            <div class="mu-table-wrap">
+              <table class="mu-table">
+                <thead>
+                  <tr>
+                    <th>Command</th>
+                    <th>Syntax / Arguments</th>
+                    <th>Function & Description</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><code>/str</code></td>
+                    <td><code>/str &lt;points&gt;</code></td>
+                    <td>Instantly add unassigned points into Strength</td>
+                  </tr>
+                  <tr>
+                    <td><code>/str auto</code></td>
+                    <td><code>/str auto &lt;target&gt;</code></td>
+                    <td>Auto-allocates points into Strength upon level up</td>
+                  </tr>
+                  <tr>
+                    <td><code>/agi</code></td>
+                    <td><code>/agi &lt;points&gt;</code></td>
+                    <td>Instantly add unassigned points into Agility</td>
+                  </tr>
+                  <tr>
+                    <td><code>/vit</code></td>
+                    <td><code>/vit &lt;points&gt;</code></td>
+                    <td>Instantly add unassigned points into Vitality</td>
+                  </tr>
+                  <tr>
+                    <td><code>/ene</code></td>
+                    <td><code>/ene &lt;points&gt;</code></td>
+                    <td>Instantly add unassigned points into Energy</td>
+                  </tr>
+                  <tr>
+                    <td><code>/reset</code></td>
+                    <td><code>/reset</code></td>
+                    <td>Reset character once max level is reached for bonus stat points</td>
+                  </tr>
+                  <tr>
+                    <td><code>/reset auto</code></td>
+                    <td><code>/reset auto &lt;S&gt; &lt;A&gt; &lt;V&gt; &lt;E&gt;</code></td>
+                    <td>Enable automated reset loop with target stat distribution</td>
+                  </tr>
+                  <tr>
+                    <td><code>/grandreset</code></td>
+                    <td><code>/grandreset</code></td>
+                    <td>Perform Grand Reset after reaching reset milestones</td>
+                  </tr>
+                  <tr>
+                    <td><code>/pkclear</code></td>
+                    <td><code>/pkclear</code></td>
+                    <td>Cleanse PK (Player Killer / Outlaw) status back to normal</td>
+                  </tr>
+                  <tr>
+                    <td><code>/ware</code></td>
+                    <td><code>/ware &lt;0..4&gt;</code></td>
+                    <td>Switch between 5 separate warehouse vaults</td>
+                  </tr>
+                  <tr>
+                    <td><code>/clearinv</code></td>
+                    <td><code>/clearinv</code></td>
+                    <td>Wipe unequipped items in inventory bags (equipped gear is safe)</td>
+                  </tr>
+                  <tr>
+                    <td><code>/move</code></td>
+                    <td><code>/move &lt;Town/Map&gt;</code></td>
+                    <td>Teleport to Lorencia, Devias, Noria, LostTower, Atlans, Tarkan, etc.</td>
+                  </tr>
+                  <tr>
+                    <td><code>/post</code></td>
+                    <td><code>/post &lt;message&gt;</code></td>
+                    <td>Global broadcast message to world channel</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Tab 3: Server Realms -->
+          <div id="tabRealms" class="mu-tab-pane">
+            <h3 class="mu-section-title">Dedicated Difficulty Realms</h3>
+            <p class="mu-section-sub">Each realm has completely isolated characters, inventories, and vaults tailored to your playstyle.</p>
+            <div class="mu-realms-grid">
+              <div class="mu-realm-card realm-easy">
+                <div class="mu-realm-card-title">🟢 Easy Realm</div>
+                <div class="mu-realm-rate">300x EXP Rate</div>
+                <ul class="mu-card-perks">
+                  <li><strong>Reset Level:</strong> Level 300</li>
+                  <li><strong>Item Drop Rate:</strong> 150% (High drop rate)</li>
+                  <li><strong>Zen Drop Rate:</strong> 100%</li>
+                  <li><strong>Monster Damage & HP:</strong> 0.7x (Soft monsters)</li>
+                  <li><strong>Death Penalty:</strong> None (0% EXP lost on death)</li>
+                  <li><strong>Grand Reset:</strong> 50 Resets</li>
+                </ul>
+              </div>
+
+              <div class="mu-realm-card realm-medium">
+                <div class="mu-realm-card-title">🟡 Medium Realm</div>
+                <div class="mu-realm-rate">100x EXP Rate</div>
+                <ul class="mu-card-perks">
+                  <li><strong>Reset Level:</strong> Level 400</li>
+                  <li><strong>Item Drop Rate:</strong> 100% (Balanced)</li>
+                  <li><strong>Zen Drop Rate:</strong> 50%</li>
+                  <li><strong>Monster Damage & HP:</strong> 1.0x (Classic authentic)</li>
+                  <li><strong>Death Penalty:</strong> Normal (3% EXP lost on death)</li>
+                  <li><strong>Grand Reset:</strong> 100 Resets</li>
+                </ul>
+              </div>
+
+              <div class="mu-realm-card realm-hard">
+                <div class="mu-realm-card-title">🔴 Hard Realm</div>
+                <div class="mu-realm-rate">30x EXP Rate</div>
+                <ul class="mu-card-perks">
+                  <li><strong>Reset Level:</strong> Level 400</li>
+                  <li><strong>Item Drop Rate:</strong> 50% (Rare drops)</li>
+                  <li><strong>Zen Drop Rate:</strong> 25%</li>
+                  <li><strong>Monster Damage & HP:</strong> 1.5x (Dangerous mobs)</li>
+                  <li><strong>Death Penalty:</strong> Double (6% EXP lost on death)</li>
+                  <li><strong>Grand Reset:</strong> 150 Resets</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          <!-- Tab 4: Save System -->
+          <div id="tabSaves" class="mu-tab-pane">
+            <h3 class="mu-section-title">Cryptographic Vault & Save Management</h3>
+            <div class="mu-saves-info-box">
+              <div class="mu-info-item">
+                <div class="mu-info-icon">💾</div>
+                <div>
+                  <strong>Instant & Periodic Auto-Save:</strong>
+                  <p>Your characters, inventories, stats, and warehouse vaults are automatically saved every 10 minutes, as well as on character reset and logout. You can also click the <strong>Save</strong> button in the top bar anytime to force an instant save.</p>
+                </div>
+              </div>
+              <div class="mu-info-item">
+                <div class="mu-info-icon">🔒</div>
+                <div>
+                  <strong>AES-256-GCM Encryption:</strong>
+                  <p>All save files are stored in your browser's persistent LocalStorage, protected with military-grade AES-GCM-256 encryption and SHA-256 tamper-proof checksum verification.</p>
+                </div>
+              </div>
+              <div class="mu-info-item">
+                <div class="mu-info-icon">📤</div>
+                <div>
+                  <strong>Exporting Backups:</strong>
+                  <p>Click the <strong>Export</strong> icon in the top bar to download an encrypted backup file (<code>.musav</code>). Keep this safe so you never lose your hard-earned items and resets.</p>
+                </div>
+              </div>
+              <div class="mu-info-item">
+                <div class="mu-info-icon">📥</div>
+                <div>
+                  <strong>Importing on Any Device:</strong>
+                  <p>Click <strong>Import</strong> to restore a previously downloaded save file. The game will automatically load your data and reload the WebAssembly client smoothly.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Tab 5: Tips & Upgrading -->
+          <div id="tabTips" class="mu-tab-pane">
+            <h3 class="mu-section-title">Classic 0.97k Equipment Upgrades & Secrets</h3>
+            <div class="mu-guide-grid">
+              <div class="mu-guide-card">
+                <div class="mu-guide-card-head">Jewels & Upgrades</div>
+                <ul class="mu-tips-list">
+                  <li><strong>Jewel of Bless:</strong> Upgrades items from +0 up to +6 with a <strong>100% success rate</strong>.</li>
+                  <li><strong>Jewel of Soul:</strong> Upgrades items from +7 to +9. Base success is 50%, increased to 75% for items with Luck!</li>
+                  <li><strong>Jewel of Life:</strong> Adds additional damage or defense options (up to +16). 50% success rate.</li>
+                  <li><strong>Chaos Machine:</strong> Located in Noria (180, 102). Used for crafting +10 / +11 items and Level 1 / Level 2 Wings!</li>
+                </ul>
+              </div>
+
+              <div class="mu-guide-card">
+                <div class="mu-guide-card-head">Beginner Progression Guide</div>
+                <ul class="mu-tips-list">
+                  <li><strong>Early Levels (1-20):</strong> Hunt Spiders, Budge Dragons, and Hounds outside Lorencia or Noria town gates.</li>
+                  <li><strong>Mid Levels (20-80):</strong> Move to Devias (Worms, Ice Monsters, Yetis) or Dungeon for higher EXP and Jewel drops.</li>
+                  <li><strong>Lost Tower & Atlans (80-160):</strong> Hunt Shadow, Balrog, and Bahamut. High chance of Excellent weapon and armor drops.</li>
+                  <li><strong>Tarkan & Death Beam Knight (160+):</strong> Endgame solo hunting ground for Mutant, Iron Wheel, and Death Beam Knight.</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Modal Footer -->
+        <div class="mu-modal-footer">
+          <span class="mu-modal-foot-tip">💡 Tip: Press <kbd>Enter</kbd> in-game anytime to open chat and type player commands.</span>
+          <button id="muModalCloseFooter" class="mu-top-btn" type="button">Close Guide</button>
+        </div>
+      </div>
+    </div>
+
     <div id="status">Starting…</div>
     <pre id="log"></pre>
     <canvas id="canvas" width="640" height="480" tabindex="-1" oncontextmenu="return false"></canvas>

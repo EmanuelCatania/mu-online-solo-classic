@@ -48,6 +48,7 @@ static int g_frames = 0;
 static int g_rightRelease = 0;
 static int g_leftRelease = 0;
 extern "C" void mu_lbutton(int down);
+extern "C" int mu_get_auto_attack(void);
 
 void Input_OnWindowMessage(UINT uMsg, WPARAM wParam, LPARAM lParam);
 
@@ -96,6 +97,7 @@ static EM_BOOL on_button(int type, const EmscriptenMouseEvent* e, void*) {
         return EM_TRUE;
     }
     if (e->button != 2) return EM_FALSE;
+    if (mu_get_auto_attack()) return EM_TRUE;
     note_mouse(e);
     if (type == EMSCRIPTEN_EVENT_MOUSEDOWN) {
         g_rightRelease = 0;
@@ -194,6 +196,26 @@ extern "C" EMSCRIPTEN_KEEPALIVE void mu_rbutton(int down) {
     } else {
         g_rightRelease = 1;
     }
+}
+
+// Auto-attack mode: cursor in center (320, 240) and right click active
+static int g_autoAttack = 0;
+
+extern "C" EMSCRIPTEN_KEEPALIVE void mu_auto_attack(int enable) {
+    g_autoAttack = enable ? 1 : 0;
+    if (g_autoAttack) {
+        DAT_083a427c = 320;
+        DAT_083a4278 = 240;
+        g_cursorSet = 1;
+        g_rightRelease = 0;
+        Input_OnWindowMessage(WM_RBUTTONDOWN, 0, 0);
+    } else {
+        g_rightRelease = 1;
+    }
+}
+
+extern "C" EMSCRIPTEN_KEEPALIVE int mu_get_auto_attack(void) {
+    return g_autoAttack;
 }
 
 // Free cursor for a controller's right stick. 640x480 layout, no button.
@@ -325,6 +347,15 @@ static void frame(void) {
 
     int before = SceneFlag;
     int sub = LoginSubState;
+    if (g_autoAttack) {
+        DAT_083a427c = 320;
+        DAT_083a4278 = 240;
+        g_cursorSet = 1;
+        g_rightRelease = 0;
+        if ((g_frames % 6) == 0) {
+            Input_OnWindowMessage(WM_RBUTTONDOWN, 0, 0);
+        }
+    }
     Scene_Dispatch((HDC)1);
     apply_query_pass();
     mu_mesh_flush();
@@ -348,7 +379,9 @@ static int page_extent(int height_axis) {
     return EM_ASM_INT({
         var dpr = window.devicePixelRatio || 1;
         if (!(dpr > 0)) dpr = 1;
-        var css = $0 ? window.innerHeight : window.innerWidth;
+        var bar = document.getElementById('muTopBar');
+        var topH = (bar && bar.offsetHeight) ? bar.offsetHeight : 40;
+        var css = $0 ? Math.max(100, window.innerHeight - topH) : window.innerWidth;
         var n = Math.round(css * dpr);
         var floor = $0 ? 480 : 640;
         if (n < floor) n = floor;
@@ -370,17 +403,21 @@ static void apply_page_size(void) {
 static void size_canvas(int w, int h) {
     EM_ASM({
         var c = Module.canvas;
+        var bar = document.getElementById('muTopBar');
+        var topH = (bar && bar.offsetHeight) ? bar.offsetHeight : 40;
+        var availH = Math.max(100, window.innerHeight - topH);
         c.width = $0;
         c.height = $1;
+        c.style.position = 'fixed';
         c.style.width = window.innerWidth + 'px';
-        c.style.height = window.innerHeight + 'px';
+        c.style.height = availH + 'px';
         c.style.left = '0px';
-        c.style.top = '0px';
+        c.style.top = topH + 'px';
         c.style.imageRendering = 'pixelated';
         c.style.outline = 'none';
         c.style.border = '0';
         Module._viewW = window.innerWidth;
-        Module._viewH = window.innerHeight;
+        Module._viewH = availH;
         if (!Module._pageResizeHook) {
             Module._pageResizeHook = 1;
             window.addEventListener('resize', function () { Module._pageDirty = 1; });

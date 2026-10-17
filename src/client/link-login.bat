@@ -62,6 +62,6 @@ if errorlevel 1 (
 copy /y "%OUT%\shell_login.wasm" "%WEB%\shell_login.wasm" >nul
 copy /y "%OUT%\shell_login.js" "%WEB%\shell_login.js" >nul
 copy /y "%OUT%\shell_login.data" "%WEB%\shell_login.data" >nul
-copy /y "%OUT%\shell_login.html" "%WEB%\index.html" >nul
+rem copy /y "%OUT%\shell_login.html" "%WEB%\index.html" >nul
 echo COPIED_TO_WEB
 exit /b 0

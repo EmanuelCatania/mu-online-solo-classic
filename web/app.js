@@ -362,6 +362,9 @@ window.muInstallAudio = function () {
       } else if (msg.type === 'SERVER_READY') {
         console.log('[SoloBridge] Solo GameServer is READY! Monsters:', msg.monsters, 'Realm:', msg.difficulty);
         workerReady = true;
+        if (window.muUpdateRealmBadge) {
+          window.muUpdateRealmBadge(msg.difficulty !== undefined ? msg.difficulty : currentRealm);
+        }
         if (pendingConnectRealm !== null) {
           const r = pendingConnectRealm;
           pendingConnectRealm = null;
@@ -374,8 +377,37 @@ window.muInstallAudio = function () {
           try {
             localStorage.setItem(getSaveKey(currentRealm), JSON.stringify(msg.saves));
             console.log(`[SoloBridge] Auto-saved vault for realm ${currentRealm}`);
+            if (msg.manual && window.muShowToast) {
+              window.muShowToast("Game saved successfully!");
+            }
           } catch (err) {
             console.error('[SoloBridge] Failed to save vault:', err);
+            if (window.muShowToast) window.muShowToast("Failed to save: " + err.message);
+          }
+        }
+      } else if (msg.type === 'SAVE_NOW_COMPLETE') {
+        if (msg.saves) {
+          try {
+            localStorage.setItem(getSaveKey(currentRealm), JSON.stringify(msg.saves));
+          } catch (err) {}
+        }
+        if (window.muShowToast) {
+          window.muShowToast(msg.success ? "Game progress saved successfully!" : "Game saved.");
+        }
+      } else if (msg.type === 'SAVES_EXPORTED') {
+        if (msg.reason === 'download' && msg.saves) {
+          try {
+            var dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(msg.saves, null, 2));
+            var dlAnchor = document.createElement('a');
+            dlAnchor.setAttribute("href", dataStr);
+            dlAnchor.setAttribute("download", "mu_solo_realm_" + (msg.realm !== undefined ? msg.realm : currentRealm) + "_save.musav");
+            document.body.appendChild(dlAnchor);
+            dlAnchor.click();
+            dlAnchor.remove();
+            if (window.muShowToast) window.muShowToast("Save exported successfully!");
+          } catch (e) {
+            console.error("Export error:", e);
+            if (window.muShowToast) window.muShowToast("Failed to export save file.");
           }
         }
       } else if (msg.type === 'PLAYER_CONNECTED') {
@@ -444,7 +476,91 @@ window.muInstallAudio = function () {
           payload: { index: 0 }
         });
       }
+    },
+    getRealm: function () {
+      return currentRealm;
+    },
+    saveNow: function () {
+      if (worker && workerReady) {
+        if (window.muShowToast) window.muShowToast("Saving game progress...");
+        worker.postMessage({
+          action: 'SAVE_NOW',
+          payload: { realm: currentRealm }
+        });
+      } else {
+        var existing = loadSavedContainer(currentRealm);
+        if (existing) {
+          if (window.muShowToast) window.muShowToast("Vault saved in browser storage!");
+        } else {
+          if (window.muShowToast) window.muShowToast("Server not ready to save yet.");
+        }
+      }
+    },
+    exportSave: function () {
+      if (worker && workerReady) {
+        if (window.muShowToast) window.muShowToast("Preparing save export...");
+        worker.postMessage({
+          action: 'EXPORT_SAVES',
+          payload: { realm: currentRealm, reason: 'download' }
+        });
+      } else {
+        var raw = localStorage.getItem(getSaveKey(currentRealm));
+        if (raw) {
+          try {
+            var parsed = JSON.parse(raw);
+            var dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(parsed, null, 2));
+            var dlAnchor = document.createElement('a');
+            dlAnchor.setAttribute("href", dataStr);
+            dlAnchor.setAttribute("download", "mu_solo_realm_" + currentRealm + "_save.musav");
+            document.body.appendChild(dlAnchor);
+            dlAnchor.click();
+            dlAnchor.remove();
+            if (window.muShowToast) window.muShowToast("Save exported from storage!");
+            return;
+          } catch (e) {}
+        }
+        if (window.muShowToast) window.muShowToast("No save data found to export.");
+      }
+    },
+    importSave: function (file) {
+      if (!file) return;
+      if (window.muShowToast) window.muShowToast("Reading save file...");
+      var reader = new FileReader();
+      reader.onload = function (e) {
+        try {
+          var content = e.target.result;
+          var parsed = JSON.parse(content);
+          if (!parsed || typeof parsed !== 'object') {
+            throw new Error("Invalid save file structure");
+          }
+          localStorage.setItem(getSaveKey(currentRealm), JSON.stringify(parsed));
+          console.log('[SoloBridge] Save imported into localStorage for realm', currentRealm);
+          if (window.muShowToast) window.muShowToast("Save imported! Reloading game engine...", 2000);
+          setTimeout(function () {
+            window.location.reload();
+          }, 450);
+        } catch (err) {
+          console.error('[SoloBridge] Import save failed:', err);
+          alert("Failed to import save file: " + err.message + "\nPlease verify the file format.");
+        }
+      };
+      reader.onerror = function () {
+        if (window.muShowToast) window.muShowToast("Error reading save file.");
+      };
+      reader.readAsText(file);
     }
+  };
+
+  window.soloSaveGameNow = function () {
+    if (window.soloBridge && window.soloBridge.saveNow) window.soloBridge.saveNow();
+  };
+
+  window.soloExportSave = function () {
+    if (window.soloBridge && window.soloBridge.exportSave) window.soloBridge.exportSave();
+  };
+
+  window.soloImportSave = function (file) {
+    if (window.soloBridge && window.soloBridge.importSave) window.soloBridge.importSave(file);
   };
 
   window.soloExitGame = function () {
@@ -463,6 +579,232 @@ window.muInstallAudio = function () {
   // Pre-initialize server worker in background while assets load
   initServerWorker(0);
 })();
+
+// ── 4b. Top Bar Controls & System Utilities ────────────────────────────────
+
+window.muShowToast = function (msg, duration) {
+  var toast = document.getElementById('muToast');
+  if (!toast) return;
+  toast.textContent = msg;
+  toast.classList.add('show');
+  if (toast._timer) clearTimeout(toast._timer);
+  toast._timer = setTimeout(function () {
+    toast.classList.remove('show');
+    toast._timer = null;
+  }, duration || 2500);
+};
+
+window.muAutoAttackActive = false;
+window.muAutoAttackInterval = null;
+
+window.muToggleAutoAttack = function () {
+  window.muAutoAttackActive = !window.muAutoAttackActive;
+  var on = window.muAutoAttackActive;
+
+  var btn = document.getElementById('muBtnAutoAttack');
+  var playIcon = btn ? btn.querySelector('.mu-icon-play') : null;
+  var stopIcon = btn ? btn.querySelector('.mu-icon-stop') : null;
+  var textSpan = document.getElementById('muAutoAttackText');
+
+  if (btn) btn.classList.toggle('active', on);
+  if (playIcon) playIcon.style.display = on ? 'none' : 'block';
+  if (stopIcon) stopIcon.style.display = on ? 'block' : 'none';
+  if (textSpan) textSpan.textContent = on ? 'Stop' : 'Auto';
+  if (btn) btn.title = on ? 'Stop Auto-Attack (Currently Active)' : 'Start Auto-Attack (Hold RMB at Center)';
+
+  // 1. Call native C++ auto-attack export if available
+  if (typeof Module !== 'undefined' && Module._mu_auto_attack) {
+    Module._mu_auto_attack(on ? 1 : 0);
+  }
+
+  // 2. High-reliability JS loop fallback
+  if (on) {
+    if (typeof Module !== 'undefined') {
+      if (Module._mu_cursor) Module._mu_cursor(320, 240);
+      if (Module._mu_rbutton) Module._mu_rbutton(1);
+    }
+    if (window.muAutoAttackInterval) clearInterval(window.muAutoAttackInterval);
+    window.muAutoAttackInterval = setInterval(function () {
+      if (!window.muAutoAttackActive) return;
+      if (typeof Module !== 'undefined') {
+        if (Module._mu_cursor) Module._mu_cursor(320, 240);
+        if (Module._mu_rbutton) Module._mu_rbutton(1);
+      }
+    }, 120);
+    window.muShowToast("Auto-Attack: ACTIVE (Center Targeting)");
+  } else {
+    if (window.muAutoAttackInterval) {
+      clearInterval(window.muAutoAttackInterval);
+      window.muAutoAttackInterval = null;
+    }
+    if (typeof Module !== 'undefined' && Module._mu_rbutton) {
+      Module._mu_rbutton(0);
+    }
+    window.muShowToast("Auto-Attack: STOPPED");
+  }
+};
+
+window.muToggleFullscreen = function () {
+  var doc = document.documentElement;
+  var isFs = !!(document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement);
+  if (!isFs) {
+    var req = doc.requestFullscreen || doc.webkitRequestFullscreen || doc.mozRequestFullScreen || doc.msRequestFullscreen;
+    if (req) req.call(doc).catch(function () {});
+  } else {
+    var exit = document.exitFullscreen || document.webkitExitFullscreen || document.mozCancelFullScreen || document.msExitFullscreen;
+    if (exit) exit.call(document).catch(function () {});
+  }
+};
+
+window.muUpdateFsIcons = function () {
+  var isFs = !!(document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement);
+  var btn = document.getElementById('muBtnFullscreen');
+  var enter = btn ? btn.querySelector('.mu-icon-fs-enter') : null;
+  var exit = btn ? btn.querySelector('.mu-icon-fs-exit') : null;
+  if (enter) enter.style.display = isFs ? 'none' : 'block';
+  if (exit) exit.style.display = isFs ? 'block' : 'none';
+  if (btn) btn.title = isFs ? 'Exit Fullscreen' : 'Toggle Fullscreen';
+};
+
+window.muUpdateRealmBadge = function (mode) {
+  var lbl = document.getElementById('muRealmLabel');
+  var badge = document.getElementById('muRealmBadge');
+  if (!lbl || !badge) return;
+  var modes = [
+    { name: 'EASY (300x)', class: 'realm-easy', title: 'Server Realm: Easy (300x EXP Rate, 150% Drops, Level 300 Reset)' },
+    { name: 'MEDIUM (100x)', class: 'realm-medium', title: 'Server Realm: Medium (100x EXP Rate, 100% Drops, Level 400 Reset)' },
+    { name: 'HARD (30x)', class: 'realm-hard', title: 'Server Realm: Hard (30x EXP Rate, 50% Drops, Level 400 Reset)' }
+  ];
+  var m = modes[mode] || modes[0];
+  lbl.textContent = m.name;
+  badge.className = 'mu-realm-badge ' + m.class;
+  badge.title = m.title;
+};
+
+window.muOpenInfoModal = function () {
+  var modal = document.getElementById('muInfoModal');
+  if (!modal) return;
+  modal.classList.add('open');
+  modal.setAttribute('aria-hidden', 'false');
+};
+
+window.muCloseInfoModal = function () {
+  var modal = document.getElementById('muInfoModal');
+  if (!modal) return;
+  modal.classList.remove('open');
+  modal.setAttribute('aria-hidden', 'true');
+};
+
+window.muInstallTopBar = function () {
+  if (window._muTopBarInstalled) return;
+  window._muTopBarInstalled = true;
+
+  var btnSave = document.getElementById('muBtnSave');
+  var btnImport = document.getElementById('muBtnImport');
+  var fileInput = document.getElementById('muSaveFileInput');
+  var btnExport = document.getElementById('muBtnExport');
+  var btnAuto = document.getElementById('muBtnAutoAttack');
+  var btnInfo = document.getElementById('muBtnInfo');
+  var btnFs = document.getElementById('muBtnFullscreen');
+  var modal = document.getElementById('muInfoModal');
+  var closeBtn = document.getElementById('muModalCloseBtn');
+  var closeFootBtn = document.getElementById('muModalCloseFooter');
+  var backdrop = document.getElementById('muModalBackdrop');
+
+  if (btnSave) {
+    btnSave.addEventListener('click', function (e) {
+      e.preventDefault();
+      window.soloSaveGameNow();
+    });
+  }
+
+  if (btnImport && fileInput) {
+    btnImport.addEventListener('click', function (e) {
+      e.preventDefault();
+      fileInput.value = '';
+      fileInput.click();
+    });
+    fileInput.addEventListener('change', function () {
+      if (fileInput.files && fileInput.files[0]) {
+        window.soloImportSave(fileInput.files[0]);
+      }
+    });
+  }
+
+  if (btnExport) {
+    btnExport.addEventListener('click', function (e) {
+      e.preventDefault();
+      window.soloExportSave();
+    });
+  }
+
+  if (btnAuto) {
+    btnAuto.addEventListener('click', function (e) {
+      e.preventDefault();
+      window.muToggleAutoAttack();
+    });
+  }
+
+  if (btnInfo) {
+    btnInfo.addEventListener('click', function (e) {
+      e.preventDefault();
+      window.muOpenInfoModal();
+    });
+  }
+
+  if (closeBtn) closeBtn.addEventListener('click', window.muCloseInfoModal);
+  if (closeFootBtn) closeFootBtn.addEventListener('click', window.muCloseInfoModal);
+  if (backdrop) backdrop.addEventListener('click', window.muCloseInfoModal);
+
+  // Tab switching inside modal
+  if (modal) {
+    var tabBtns = modal.querySelectorAll('.mu-tab-btn');
+    tabBtns.forEach(function (tabBtn) {
+      tabBtn.addEventListener('click', function () {
+        var targetId = tabBtn.getAttribute('data-tab');
+        if (!targetId) return;
+        tabBtns.forEach(function (b) { b.classList.remove('active'); });
+        tabBtn.classList.add('active');
+        var panes = modal.querySelectorAll('.mu-tab-pane');
+        panes.forEach(function (pane) {
+          pane.classList.toggle('active', pane.id === targetId);
+        });
+      });
+    });
+  }
+
+  // Close modal on Escape key
+  window.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' || e.keyCode === 27) {
+      if (modal && modal.classList.contains('open')) {
+        e.preventDefault();
+        e.stopPropagation();
+        window.muCloseInfoModal();
+      }
+    }
+  }, true);
+
+  if (btnFs) {
+    btnFs.addEventListener('click', function (e) {
+      e.preventDefault();
+      window.muToggleFullscreen();
+    });
+  }
+
+  document.addEventListener('fullscreenchange', window.muUpdateFsIcons);
+  document.addEventListener('webkitfullscreenchange', window.muUpdateFsIcons);
+
+  var r = (window.soloBridge && window.soloBridge.getRealm) ? window.soloBridge.getRealm() : 0;
+  window.muUpdateRealmBadge(r);
+};
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', function () {
+    if (window.muInstallTopBar) window.muInstallTopBar();
+  });
+} else {
+  if (window.muInstallTopBar) window.muInstallTopBar();
+}
 
 // ── 5. DOM & Runtime Logging ───────────────────────────────────────────────
 
@@ -505,6 +847,7 @@ var Module = {
   onRuntimeInitialized: function () {
     if (window.finishPreloader) window.finishPreloader();
     if (window.soloBridge && window.soloBridge.flushQueue) window.soloBridge.flushQueue();
+    if (window.muInstallTopBar) window.muInstallTopBar();
     if (window.muInstallKeys) window.muInstallKeys();
     if (window.muInstallTouch) window.muInstallTouch();
     if (window.muInstallPad) window.muInstallPad();

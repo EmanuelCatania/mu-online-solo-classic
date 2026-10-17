@@ -33,7 +33,9 @@ canvas#canvas {
   background: #000;
   position: fixed;
   left: 0;
-  top: 0;
+  top: 40px;
+  width: 100%;
+  height: calc(100% - 40px);
   z-index: 2;
   outline: none;
   border: 0;
@@ -43,6 +45,252 @@ canvas#canvas {
 canvas#canvas:focus,
 canvas#canvas:focus-visible {
   outline: none !important;
+}
+
+/* ==========================================================================
+   40px Top Control Bar & Game Header
+   ========================================================================== */
+
+header.mu-topbar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 40px;
+  background: rgba(10, 12, 18, 0.94);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.09);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 14px;
+  z-index: 99;
+  user-select: none;
+  -webkit-user-select: none;
+  box-sizing: border-box;
+}
+
+.mu-topbar-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.mu-brand-box {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.mu-brand-title {
+  font-family: 'Space Grotesk', 'Outfit', sans-serif;
+  font-weight: 800;
+  font-size: 14px;
+  letter-spacing: 1.1px;
+  background: linear-gradient(135deg, #ffffff 20%, #e2e8f0 60%, #94a3b8 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  text-shadow: 0 2px 10px rgba(255, 255, 255, 0.1);
+}
+
+.mu-brand-sep {
+  color: rgba(255, 255, 255, 0.2);
+  font-weight: 400;
+  font-size: 12px;
+}
+
+.mu-brand-desc {
+  font-family: 'Space Grotesk', sans-serif;
+  font-weight: 600;
+  font-size: 10.5px;
+  letter-spacing: 0.8px;
+  color: #717d96;
+}
+
+/* Server Realm Mode Badge */
+.mu-realm-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  transition: all 0.2s ease;
+  cursor: default;
+}
+
+.mu-realm-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  position: relative;
+}
+
+.realm-easy {
+  background: rgba(34, 197, 94, 0.12);
+  border: 1px solid rgba(34, 197, 94, 0.35);
+  color: #4ade80;
+}
+.realm-easy .mu-realm-dot {
+  background: #22c55e;
+  box-shadow: 0 0 8px #22c55e;
+}
+
+.realm-medium {
+  background: rgba(245, 158, 11, 0.12);
+  border: 1px solid rgba(245, 158, 11, 0.35);
+  color: #fbbf24;
+}
+.realm-medium .mu-realm-dot {
+  background: #f59e0b;
+  box-shadow: 0 0 8px #f59e0b;
+}
+
+.realm-hard {
+  background: rgba(239, 68, 68, 0.12);
+  border: 1px solid rgba(239, 68, 68, 0.35);
+  color: #f87171;
+}
+.realm-hard .mu-realm-dot {
+  background: #ef4444;
+  box-shadow: 0 0 8px #ef4444;
+}
+
+/* Right Controls */
+.mu-topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.mu-top-sep {
+  width: 1px;
+  height: 18px;
+  background: rgba(255, 255, 255, 0.14);
+  margin: 0 3px;
+}
+
+.mu-top-btn {
+  height: 28px;
+  padding: 0 8px;
+  border-radius: 5px;
+  border: 1px solid rgba(255, 255, 255, 0.13);
+  background: rgba(255, 255, 255, 0.05);
+  color: #cbd5e1;
+  font-family: 'Outfit', sans-serif;
+  font-size: 11.5px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  cursor: pointer;
+  outline: none;
+  transition: all 0.18s cubic-bezier(0.4, 0, 0.2, 1);
+  box-sizing: border-box;
+}
+
+.mu-top-btn:hover {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.28);
+  color: #ffffff;
+  transform: translateY(-1px);
+}
+
+.mu-top-btn:active {
+  transform: translateY(0);
+}
+
+.mu-btn-icon {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+}
+
+/* Auto Attack Toggle Button */
+.mu-btn-auto {
+  border-color: rgba(245, 158, 11, 0.35);
+  background: rgba(245, 158, 11, 0.08);
+  color: #fbbf24;
+}
+
+.mu-btn-auto:hover {
+  background: rgba(245, 158, 11, 0.2);
+  border-color: rgba(245, 158, 11, 0.5);
+  color: #fef08a;
+}
+
+.mu-btn-auto.active {
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.85), rgba(220, 38, 38, 0.95));
+  border-color: #f87171;
+  color: #ffffff;
+  box-shadow: 0 0 14px rgba(239, 68, 68, 0.55);
+  animation: mu-pulse-glow 1.6s infinite ease-in-out;
+}
+
+@keyframes mu-pulse-glow {
+  0%, 100% {
+    box-shadow: 0 0 12px rgba(239, 68, 68, 0.45);
+    border-color: #f87171;
+  }
+  50% {
+    box-shadow: 0 0 22px rgba(239, 68, 68, 0.85);
+    border-color: #fca5a5;
+  }
+}
+
+/* Floating Toast Notification */
+.mu-toast {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%) translateY(20px);
+  background: rgba(15, 23, 42, 0.94);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.7);
+  border-radius: 8px;
+  padding: 10px 20px;
+  color: #f8fafc;
+  font-family: 'Outfit', sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  pointer-events: none;
+  opacity: 0;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 10000;
+  white-space: nowrap;
+}
+
+.mu-toast.show {
+  transform: translateX(-50%) translateY(0);
+  opacity: 1;
+}
+
+/* Responsive adjustments for top bar */
+@media (max-width: 720px) {
+  .mu-brand-desc {
+    display: none;
+  }
+  .mu-brand-sep {
+    display: none;
+  }
+  .mu-btn-text {
+    display: none;
+  }
+  .mu-top-btn {
+    padding: 0 8px;
+  }
+}
+
+@media (max-width: 480px) {
+  .mu-realm-badge {
+    display: none;
+  }
 }
 
 /* === Mobile / Touch Virtual Controls === */
@@ -419,4 +667,444 @@ canvas#canvas:focus-visible {
   line-height: 1.45;
   color: #94a3b8;
   transition: opacity 0.3s ease;
+}
+
+/* ==========================================================================
+   Game Guide & Info Modal Popup Dialog
+   ========================================================================== */
+
+.mu-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  user-select: text;
+  -webkit-user-select: text;
+}
+
+.mu-modal.open {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.mu-modal-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(3, 4, 8, 0.78);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+.mu-modal-dialog {
+  position: relative;
+  z-index: 2;
+  width: 92%;
+  max-width: 840px;
+  max-height: 86vh;
+  background: #0b0d13;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  box-shadow: 0 25px 65px rgba(0, 0, 0, 0.85), 0 0 1px 1px rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  transform: scale(0.95) translateY(8px);
+  transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.mu-modal.open .mu-modal-dialog {
+  transform: scale(1) translateY(0);
+}
+
+/* Modal Header */
+.mu-modal-header {
+  padding: 14px 20px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.mu-modal-title-box {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.mu-modal-icon-badge {
+  width: 36px;
+  height: 36px;
+  border-radius: 9px;
+  background: linear-gradient(135deg, rgba(56, 189, 248, 0.18), rgba(14, 165, 233, 0.08));
+  border: 1px solid rgba(56, 189, 248, 0.35);
+  box-shadow: 0 0 14px rgba(56, 189, 248, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #38bdf8;
+  flex-shrink: 0;
+}
+
+.mu-modal-icon-badge svg {
+  width: 20px;
+  height: 20px;
+  display: block;
+}
+
+.mu-modal-title {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 16px;
+  font-weight: 700;
+  color: #f8fafc;
+  margin: 0;
+  line-height: 1.25;
+}
+
+.mu-modal-subtitle {
+  font-family: 'Outfit', sans-serif;
+  font-size: 11.5px;
+  color: #94a3b8;
+  margin: 2px 0 0;
+}
+
+.mu-modal-close {
+  width: 30px;
+  height: 30px;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.04);
+  color: #94a3b8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  padding: 0;
+}
+
+.mu-modal-close:hover {
+  background: rgba(239, 68, 68, 0.2);
+  border-color: rgba(239, 68, 68, 0.4);
+  color: #f87171;
+}
+
+.mu-modal-close svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* Modal Tabs */
+.mu-modal-tabs {
+  display: flex;
+  gap: 6px;
+  padding: 8px 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+  background: rgba(14, 17, 24, 0.7);
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+
+.mu-tab-btn {
+  padding: 6px 12px;
+  border-radius: 6px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: #94a3b8;
+  font-family: 'Outfit', sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.mu-tab-btn:hover {
+  color: #f1f5f9;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.mu-tab-btn.active {
+  color: #38bdf8;
+  background: rgba(56, 189, 248, 0.12);
+  border-color: rgba(56, 189, 248, 0.35);
+}
+
+/* Modal Body */
+.mu-modal-body {
+  padding: 18px 20px;
+  overflow-y: auto;
+  flex: 1;
+  min-height: 260px;
+  max-height: 54vh;
+}
+
+.mu-tab-pane {
+  display: none;
+  animation: muModalFadeIn 0.2s ease;
+}
+
+.mu-tab-pane.active {
+  display: block;
+}
+
+@keyframes muModalFadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.mu-section-title {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 14.5px;
+  font-weight: 700;
+  color: #f1f5f9;
+  margin: 0 0 6px 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.mu-section-sub {
+  font-size: 12px;
+  color: #94a3b8;
+  margin: 0 0 14px 0;
+  line-height: 1.45;
+}
+
+/* Grid & Cards */
+.mu-guide-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 12px;
+}
+
+.mu-guide-card {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  padding: 12px 14px;
+}
+
+.mu-guide-card-head {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #cbd5e1;
+  margin-bottom: 10px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+/* Hotkey list */
+.mu-hotkey-list, .mu-tips-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.mu-hotkey-list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 12px;
+  color: #cbd5e1;
+}
+
+.mu-key-combo {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+kbd {
+  display: inline-block;
+  padding: 2px 6px;
+  font-family: 'Space Grotesk', monospace;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.2;
+  color: #f8fafc;
+  background: #171a24;
+  border: 1px solid #2d3345;
+  border-radius: 4px;
+  box-shadow: 0 2px 0 #0c0e14;
+}
+
+/* Table styling */
+.mu-table-wrap {
+  overflow-x: auto;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.mu-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+  text-align: left;
+}
+
+.mu-table th {
+  padding: 9px 12px;
+  background: rgba(255, 255, 255, 0.04);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  color: #e2e8f0;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.mu-table td {
+  padding: 8px 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  color: #cbd5e1;
+}
+
+.mu-table tr:hover td {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.mu-table code {
+  font-family: monospace;
+  background: rgba(56, 189, 248, 0.1);
+  border: 1px solid rgba(56, 189, 248, 0.25);
+  color: #7dd3fc;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 11.5px;
+}
+
+/* Realms Cards */
+.mu-realms-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 12px;
+}
+
+.mu-realm-card {
+  border-radius: 8px;
+  padding: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.02);
+  display: flex;
+  flex-direction: column;
+}
+
+.mu-realm-card.realm-easy {
+  border-color: rgba(34, 197, 94, 0.35);
+  background: radial-gradient(circle at top right, rgba(34, 197, 94, 0.08) 0%, rgba(10, 12, 18, 0.6) 80%);
+}
+
+.mu-realm-card.realm-medium {
+  border-color: rgba(245, 158, 11, 0.35);
+  background: radial-gradient(circle at top right, rgba(245, 158, 11, 0.08) 0%, rgba(10, 12, 18, 0.6) 80%);
+}
+
+.mu-realm-card.realm-hard {
+  border-color: rgba(239, 68, 68, 0.35);
+  background: radial-gradient(circle at top right, rgba(239, 68, 68, 0.08) 0%, rgba(10, 12, 18, 0.6) 80%);
+}
+
+.mu-realm-card-title {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+.mu-realm-rate {
+  font-size: 12px;
+  font-weight: 700;
+  color: #94a3b8;
+  margin-bottom: 12px;
+}
+
+.mu-card-perks {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 11.5px;
+  color: #cbd5e1;
+}
+
+.mu-card-perks strong {
+  color: #f1f5f9;
+}
+
+/* Saves Info Box */
+.mu-saves-info-box {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.mu-info-item {
+  display: flex;
+  gap: 12px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  padding: 12px 14px;
+  font-size: 12px;
+  color: #cbd5e1;
+  line-height: 1.5;
+}
+
+.mu-info-item strong {
+  color: #f8fafc;
+  display: block;
+  margin-bottom: 3px;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 13px;
+}
+
+.mu-info-item p {
+  margin: 0;
+}
+
+.mu-info-icon {
+  font-size: 20px;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+/* Tips list */
+.mu-tips-list li {
+  font-size: 12px;
+  color: #cbd5e1;
+  line-height: 1.5;
+}
+
+/* Modal Footer */
+.mu-modal-footer {
+  padding: 12px 20px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: rgba(14, 17, 24, 0.7);
+  gap: 12px;
+}
+
+.mu-modal-foot-tip {
+  font-size: 11.5px;
+  color: #94a3b8;
 }

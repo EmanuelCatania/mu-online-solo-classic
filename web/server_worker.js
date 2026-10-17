@@ -393,6 +393,26 @@ self.onmessage = async function (e) {
             break;
         }
 
+        case 'SAVE_NOW': {
+            const saves = await exportEncryptedSaves();
+            if (saves) {
+                self.postMessage({
+                    type: 'AUTO_SAVE_DATA',
+                    saves: saves,
+                    timestamp: Date.now(),
+                    manual: true
+                });
+            }
+            self.postMessage({
+                type: 'SAVE_NOW_COMPLETE',
+                success: !!saves,
+                saves: saves,
+                realm: payload?.realm,
+                timestamp: Date.now()
+            });
+            break;
+        }
+
         case 'IMPORT_SAVES': {
             const count = await importEncryptedSaves(payload?.saves);
             self.postMessage({
