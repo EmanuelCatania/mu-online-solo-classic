@@ -1379,8 +1379,11 @@ void __cdecl InitGuildWar(void) {
 void __cdecl CWsctlc_Close(int ctx) {
     gNetwork.ResetSessionData();
     SocketClientIsGame = 0; // g_bGameServerConnected
-    closesocket(*(SOCKET *)(ctx + 8));
+    SOCKET s = *(SOCKET *)(ctx + 8);
     *(int *)(ctx + 8) = -1; // INVALID_SOCKET
+    if (s != (SOCKET)-1 && s != (SOCKET)0xffffffff) {
+        closesocket(s);
+    }
 }
 
 // FUN_0053cbb0 @ 0x0053CBB0 (18 bytes) — GameGuard class init

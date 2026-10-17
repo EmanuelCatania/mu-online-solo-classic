@@ -2342,6 +2342,8 @@ void gObjSecondProc()
 				else if (lpObj->CloseType == 2)
 				{
 					GCCloseClientSend(lpObj->Index, 2);
+
+					CloseClient(lpObj->Index);
 				}
 				else
 				{

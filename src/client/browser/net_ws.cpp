@@ -180,9 +180,18 @@ extern "C" int mu_net_closesocket(SOCKET) {
     g_open = 0;
     g_in_len = 0;
     g_err = 0;
-    post_event(FD_CLOSE);
     return 0;
 }
+
+extern "C" EMSCRIPTEN_KEEPALIVE void mu_net_push_disconnect(void) {
+    if (g_open) {
+        g_open = 0;
+        g_in_len = 0;
+        g_err = 0;
+        post_event(FD_CLOSE);
+    }
+}
+
 
 extern "C" int mu_net_send(SOCKET, const char* buf, int len, int) {
     if (!g_open) {

@@ -257,8 +257,9 @@ void __cdecl UI_InGameMenu(void)
                             DAT_083a7c20 = 25;   // 25 ticks (2.5s) fallback timeout
                         } else {
                             if (SocketClientSocket != 0xffffffff) {
-                                closesocket((SOCKET)SocketClientSocket);
+                                SOCKET s = (SOCKET)SocketClientSocket;
                                 SocketClientSocket = (DWORD)INVALID_SOCKET;
+                                closesocket(s);
                             }
                             SendMessageA(gWindow.GetHwnd(), WM_DESTROY, 0, 0);
                         }
@@ -288,9 +289,10 @@ void __cdecl UI_InGameMenu(void)
                             // regresiva (avisos de 5 s) y contesta F1/02/02, y es
                             // ReceiveLogOut (Recv_LogOut sub 2) quien libera el
                             // mundo, cierra el socket y vuelve al login.
-                            if (SceneFlag == 5)                      // IDA L1070: sub_50F7A0()
+                            if (SceneFlag == 5) {                     // IDA L1070: sub_50F7A0()
                                 SaveOptionsToServer97k();
                                 FUN_0050f700("Data\\Macro.txt");  // IDA L1071
+                            }
                             if (DAT_07eaa11a != 0) {                    // ChaosMixOpened
                                 UIChatLogWindow_AddText("", GlobalText[592], 2);
                             } else {

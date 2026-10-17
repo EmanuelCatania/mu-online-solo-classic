@@ -109,8 +109,9 @@ void CNetwork::OnSocketEvent(WORD evt, WORD err)
         if (!reconnecting)
             UIChatLogWindow_AddText((const char*)&DAT_083a7c5c, GlobalText[3], 1);
         if (SocketClientSocket != 0xffffffff) {
-            closesocket((SOCKET)SocketClientSocket);
+            SOCKET s = (SOCKET)SocketClientSocket;
             SocketClientSocket = (DWORD)INVALID_SOCKET;
+            closesocket(s);
         }
     }
 }

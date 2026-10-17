@@ -12,8 +12,9 @@
 int __cdecl Net_Disconnect(int ctx) {
     (void)ctx;
     if (SocketClientSocket != (DWORD)INVALID_SOCKET) {
-        closesocket((SOCKET)SocketClientSocket);
+        SOCKET s = (SOCKET)SocketClientSocket;
         SocketClientSocket = (DWORD)INVALID_SOCKET;
+        closesocket(s);
     }
     return 0;
 }

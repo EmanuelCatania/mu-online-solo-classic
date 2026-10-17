@@ -76,7 +76,7 @@ var ENVIRONMENT_IS_SHELL = !ENVIRONMENT_IS_WEB && !ENVIRONMENT_IS_NODE && !ENVIR
 
 // --pre-jses are emitted after the Module integration code, so that they can
 // refer to Module (if they choose; they can also define Module)
-// include: C:\Users\andvolodko\AppData\Local\Temp\tmpp04td34g.js
+// include: C:\Users\andvolodko\AppData\Local\Temp\tmp8x20re6d.js
 
   if (!Module['expectedDataFileDownloads']) Module['expectedDataFileDownloads'] = 0;
   Module['expectedDataFileDownloads']++;
@@ -247,21 +247,21 @@ Module['FS_createPath']("/Data", "World9", true, true);
 
   })();
 
-// end include: C:\Users\andvolodko\AppData\Local\Temp\tmpp04td34g.js
-// include: C:\Users\andvolodko\AppData\Local\Temp\tmp_orypv9v.js
+// end include: C:\Users\andvolodko\AppData\Local\Temp\tmp8x20re6d.js
+// include: C:\Users\andvolodko\AppData\Local\Temp\tmpkkcpy0z5.js
 
     // All the pre-js content up to here must remain later on, we need to run
     // it.
     if ((typeof ENVIRONMENT_IS_WASM_WORKER != 'undefined' && ENVIRONMENT_IS_WASM_WORKER) || (typeof ENVIRONMENT_IS_PTHREAD != 'undefined' && ENVIRONMENT_IS_PTHREAD) || (typeof ENVIRONMENT_IS_AUDIO_WORKLET != 'undefined' && ENVIRONMENT_IS_AUDIO_WORKLET)) Module['preRun'] = [];
     var necessaryPreJSTasks = Module['preRun'].slice();
-  // end include: C:\Users\andvolodko\AppData\Local\Temp\tmp_orypv9v.js
-// include: C:\Users\andvolodko\AppData\Local\Temp\tmpjox8ds37.js
+  // end include: C:\Users\andvolodko\AppData\Local\Temp\tmpkkcpy0z5.js
+// include: C:\Users\andvolodko\AppData\Local\Temp\tmp814zg7g2.js
 
     if (!Module['preRun']) throw 'Module.preRun should exist because file support used it; did a pre-js delete it?';
     necessaryPreJSTasks.forEach((task) => {
       if (Module['preRun'].indexOf(task) < 0) throw 'All preRun tasks that exist before user pre-js code should remain after; did you replace Module or modify Module.preRun?';
     });
-  // end include: C:\Users\andvolodko\AppData\Local\Temp\tmpjox8ds37.js
+  // end include: C:\Users\andvolodko\AppData\Local\Temp\tmp814zg7g2.js
 
 
 var programArgs = [];
@@ -12187,6 +12187,7 @@ var _main = Module['_main'] = makeInvalidEarlyAccess('_main');
 var _mu_net_get_push_buffer = Module['_mu_net_get_push_buffer'] = makeInvalidEarlyAccess('_mu_net_get_push_buffer');
 var _mu_net_push_packet = Module['_mu_net_push_packet'] = makeInvalidEarlyAccess('_mu_net_push_packet');
 var _mu_net_push_bytes = Module['_mu_net_push_bytes'] = makeInvalidEarlyAccess('_mu_net_push_bytes');
+var _mu_net_push_disconnect = Module['_mu_net_push_disconnect'] = makeInvalidEarlyAccess('_mu_net_push_disconnect');
 var _ma_device__on_notification_unlocked = Module['_ma_device__on_notification_unlocked'] = makeInvalidEarlyAccess('_ma_device__on_notification_unlocked');
 var _ma_malloc_emscripten = Module['_ma_malloc_emscripten'] = makeInvalidEarlyAccess('_ma_malloc_emscripten');
 var _ma_free_emscripten = Module['_ma_free_emscripten'] = makeInvalidEarlyAccess('_ma_free_emscripten');
@@ -12222,6 +12223,7 @@ function assignWasmExports(wasmExports) {
   assert(typeof wasmExports['mu_net_get_push_buffer'] != 'undefined', 'missing Wasm export: mu_net_get_push_buffer');
   assert(typeof wasmExports['mu_net_push_packet'] != 'undefined', 'missing Wasm export: mu_net_push_packet');
   assert(typeof wasmExports['mu_net_push_bytes'] != 'undefined', 'missing Wasm export: mu_net_push_bytes');
+  assert(typeof wasmExports['mu_net_push_disconnect'] != 'undefined', 'missing Wasm export: mu_net_push_disconnect');
   assert(typeof wasmExports['ma_device__on_notification_unlocked'] != 'undefined', 'missing Wasm export: ma_device__on_notification_unlocked');
   assert(typeof wasmExports['ma_malloc_emscripten'] != 'undefined', 'missing Wasm export: ma_malloc_emscripten');
   assert(typeof wasmExports['ma_free_emscripten'] != 'undefined', 'missing Wasm export: ma_free_emscripten');
@@ -12253,6 +12255,7 @@ function assignWasmExports(wasmExports) {
   _mu_net_get_push_buffer = Module['_mu_net_get_push_buffer'] = createExportWrapper('mu_net_get_push_buffer', wasmExports['mu_net_get_push_buffer'], 0);
   _mu_net_push_packet = Module['_mu_net_push_packet'] = createExportWrapper('mu_net_push_packet', wasmExports['mu_net_push_packet'], 1);
   _mu_net_push_bytes = Module['_mu_net_push_bytes'] = createExportWrapper('mu_net_push_bytes', wasmExports['mu_net_push_bytes'], 2);
+  _mu_net_push_disconnect = Module['_mu_net_push_disconnect'] = createExportWrapper('mu_net_push_disconnect', wasmExports['mu_net_push_disconnect'], 0);
   _ma_device__on_notification_unlocked = Module['_ma_device__on_notification_unlocked'] = createExportWrapper('ma_device__on_notification_unlocked', wasmExports['ma_device__on_notification_unlocked'], 1);
   _ma_malloc_emscripten = Module['_ma_malloc_emscripten'] = createExportWrapper('ma_malloc_emscripten', wasmExports['ma_malloc_emscripten'], 2);
   _ma_free_emscripten = Module['_ma_free_emscripten'] = createExportWrapper('ma_free_emscripten', wasmExports['ma_free_emscripten'], 2);

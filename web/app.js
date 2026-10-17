@@ -412,6 +412,11 @@ window.muInstallAudio = function () {
         }
       } else if (msg.type === 'PLAYER_CONNECTED') {
         console.log('[SoloBridge] Player connected to GameServer session:', msg.playerIndex);
+      } else if (msg.type === 'PLAYER_DISCONNECTED') {
+        console.log('[SoloBridge] Player session disconnected on server');
+        if (typeof Module !== 'undefined' && Module._mu_net_push_disconnect) {
+          Module._mu_net_push_disconnect();
+        }
       }
     };
 
