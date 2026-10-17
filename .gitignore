@@ -29,5 +29,3 @@ src/client/proof/
 # Scratch & temporary artifacts
 scratch/
 
-# Large preloaded client asset bundle (> 100MB, generated during client build)
-web/shell_login.data

@@ -46,7 +46,21 @@ async function testServer() {
     const playerIndex = Module.ccall('SoloServer_ConnectPlayer', 'number', ['string'], ['127.0.0.1']);
     console.log(`Player session connected with index: ${playerIndex}`);
 
-    function sendPacket(bytes) {
+    const XorKey = [
+        0xE7, 0x6D, 0x3A, 0x89, 0xBC, 0xB2, 0x9F, 0x73,
+        0x23, 0xA8, 0xFE, 0xB6, 0x49, 0x5D, 0x39, 0x5D,
+        0x8A, 0xCB, 0x63, 0x8D, 0xEA, 0x7D, 0x2B, 0x5F,
+        0xC3, 0xB1, 0xE9, 0x83, 0x29, 0x51, 0xE8, 0x56
+    ];
+
+    function sendPacket(rawBytes) {
+        const bytes = new Uint8Array(rawBytes);
+        // Emulate client C1 frame encoding (chain XOR from byte 3)
+        if (bytes[0] === 0xC1 && bytes.length >= 4) {
+            for (let i = 3; i < bytes.length; i++) {
+                bytes[i] ^= bytes[i - 1] ^ XorKey[i & 0x1f];
+            }
+        }
         const ptr = Module._malloc(bytes.length);
         Module.HEAPU8.set(bytes, ptr);
         Module._SoloServer_ReceiveClientPacket(ptr, bytes.length);

@@ -22,7 +22,14 @@ const MIME_TYPES = {
 const server = http.createServer((req, res) => {
     // Strip query string
     const cleanUrl = req.url.split('?')[0];
+    if (cleanUrl === '/favicon.ico') {
+        res.writeHead(204);
+        res.end();
+        return;
+    }
+
     let filePath = path.join(WEB_DIR, cleanUrl === '/' ? 'index.html' : cleanUrl);
+    const isHead = req.method === 'HEAD';
 
     // Cross-Origin Isolation headers for WebAssembly & SharedArrayBuffer
     res.setHeader('Cross-Origin-Opener-Policy', 'same-origin');
@@ -46,15 +53,15 @@ const server = http.createServer((req, res) => {
                     res.end('404 Not Found (Directory has no index.html)');
                     return;
                 }
-                serveFileStream(filePath, subStats, res);
+                serveFileStream(filePath, subStats, res, isHead);
             });
         }
 
-        serveFileStream(filePath, stats, res);
+        serveFileStream(filePath, stats, res, isHead);
     });
 });
 
-function serveFileStream(filePath, stats, res) {
+function serveFileStream(filePath, stats, res, isHead) {
     const ext = path.extname(filePath).toLowerCase();
     const contentType = MIME_TYPES[ext] || 'application/octet-stream';
 
@@ -63,6 +70,11 @@ function serveFileStream(filePath, stats, res) {
         'Content-Length': stats.size,
         'Cache-Control': 'no-cache'
     });
+
+    if (isHead) {
+        res.end();
+        return;
+    }
 
     const stream = fs.createReadStream(filePath);
     stream.on('error', (err) => {

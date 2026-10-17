@@ -208,10 +208,26 @@ SOLO_API void SoloServer_ReceiveClientPacket(const uint8_t* data, int size)
 			ProtocolCore(head, DecBuff, DecSize, playerIndex, 1, DecSerial);
 		}
 	}
+	else if (header == 0xC1 || header == 0xC2)
+	{
+		if (!gPacketManager.AddData(const_cast<BYTE*>(data), size) || !gPacketManager.ExtractPacket(DecBuff))
+		{
+			printf("[SoloServer] Failed to extract C1/C2 packet (size %d)\n", size);
+			fflush(stdout);
+			LogAdd(LOG_RED, "[SoloServer] Failed to extract C1/C2 packet (size %d)", size);
+			return;
+		}
+
+		head = (header == 0xC1) ? DecBuff[2] : DecBuff[3];
+		BYTE sub = (header == 0xC1) ? ((size > 3) ? DecBuff[3] : 0) : ((size > 4) ? DecBuff[4] : 0);
+		printf("[SoloServer] ProtocolCore dispatch: head=0x%02X, sub=0x%02X, size=%d\n", head, sub, size);
+		fflush(stdout);
+
+		ProtocolCore(head, DecBuff, size, playerIndex, 0, -1);
+	}
 	else
 	{
-		head = (header == 0xC1) ? data[2] : data[3];
-		ProtocolCore(head, const_cast<BYTE*>(data), size, playerIndex, 0, -1);
+		LogAdd(LOG_RED, "[SoloServer] Unknown packet header 0x%02X (size %d)", header, size);
 	}
 }
 

@@ -1,0 +1,422 @@
+/* ==========================================================================
+   MU Online Solo Classic - Stylesheet (Modern Strict Theme)
+   ========================================================================== */
+
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&family=Space+Grotesk:wght@500;600;700&display=swap');
+
+/* === Base Layout & Resets === */
+body {
+  font-family: 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: #08090d;
+  color: #f1f5f9;
+}
+
+html, body {
+  margin: 0;
+  width: 100%;
+  height: 100%;
+  background: #000;
+  overflow: hidden;
+  cursor: default;
+}
+
+#status, #log {
+  display: none;
+}
+
+pre {
+  white-space: pre-wrap;
+}
+
+/* === Game Canvas === */
+canvas#canvas {
+  background: #000;
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: 2;
+  outline: none;
+  border: 0;
+  cursor: none;
+}
+
+canvas#canvas:focus,
+canvas#canvas:focus-visible {
+  outline: none !important;
+}
+
+/* === Mobile / Touch Virtual Controls === */
+#muKeyBtn, #muKeys, #muStick, #muRBtn {
+  display: none;
+}
+
+@media (pointer: coarse), (max-width: 900px) {
+  #muKeyBtn { display: flex; }
+  #muStick { display: block; }
+  #muRBtn { display: flex; }
+}
+
+#muKeyBtn {
+  position: fixed;
+  right: 10px;
+  top: 42%;
+  z-index: 8;
+  width: 46px;
+  height: 46px;
+  padding: 0;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(18, 20, 28, 0.85);
+  color: #eee;
+  align-items: center;
+  justify-content: center;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+#muKeyBtn.on {
+  background: rgba(60, 64, 80, 0.95);
+}
+
+#muKeys {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 7;
+  padding: 6px 4px calc(6px + env(safe-area-inset-bottom));
+  background: rgba(10, 12, 18, 0.94);
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+
+#muKeys.on {
+  display: block;
+}
+
+#muKeys .row {
+  display: flex;
+  gap: 3px;
+  margin: 3px 0;
+}
+
+#muKeys button {
+  flex: 1;
+  min-height: 40px;
+  border-radius: 6px;
+  border: 0;
+  background: #2a2d37;
+  color: #f1f5f9;
+  font: 15px/1 sans-serif;
+  touch-action: none;
+  padding: 0;
+}
+
+#muKeys button.wide { flex: 1.6; }
+#muKeys button.space { flex: 4; }
+#muKeys button.lit { background: #4f566b; color: #fff; }
+
+#muStick {
+  position: fixed;
+  left: max(14px, env(safe-area-inset-left));
+  top: auto;
+  bottom: max(12px, env(safe-area-inset-bottom));
+  z-index: 6;
+  width: 128px;
+  height: 128px;
+  border-radius: 50%;
+  background: rgba(18, 20, 28, 0.4);
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+#muStickKnob {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 54px;
+  height: 54px;
+  margin: -27px 0 0 -27px;
+  border-radius: 50%;
+  background: rgba(220, 225, 235, 0.85);
+  pointer-events: none;
+}
+
+#muRBtn {
+  position: fixed;
+  right: 10px;
+  top: calc(42% + 58px);
+  z-index: 8;
+  width: 64px;
+  height: 64px;
+  padding: 0;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(18, 20, 28, 0.85);
+  color: #eee;
+  align-items: center;
+  justify-content: center;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+#muRBtn.on {
+  background: rgba(185, 28, 28, 0.9);
+}
+
+/* ==========================================================================
+   Modern Strict Preloader (Clean Dark Theme - Zero Gaudy Yellow)
+   ========================================================================== */
+
+.mu-preloader {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #08090d;
+  overflow: hidden;
+  user-select: none;
+  -webkit-user-select: none;
+  transition: opacity 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.mu-preloader.fade-out {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* Subtle Deep Dark Vignette with Screen Background */
+.mu-preloader-bg {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 50% 50%, rgba(8, 10, 16, 0.55) 0%, rgba(5, 6, 9, 0.92) 80%, #030406 100%),
+    url('preloader_screen_bg.jpg') center/cover no-repeat;
+}
+
+/* High-Density Atmospheric Particle Canvas */
+.mu-particle-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* Strict Modern Glass Card with Custom Generated Dark Plate Texture */
+.mu-preloader-card {
+  position: relative;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: min(90vw, 440px);
+  padding: 38px 30px 30px;
+  background:
+    linear-gradient(170deg, rgba(14, 17, 26, 0.88) 0%, rgba(8, 10, 16, 0.95) 100%),
+    url('preloader_panel_bg.jpg') center/cover no-repeat;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 12px;
+  box-shadow:
+    0 24px 64px rgba(0, 0, 0, 0.95),
+    0 0 1px 1px rgba(255, 255, 255, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.22);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  text-align: center;
+  overflow: hidden;
+}
+
+.mu-preloader-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 15%;
+  right: 15%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.45), transparent);
+  pointer-events: none;
+}
+
+
+/* Clean Modern Typography */
+.mu-title-section {
+  width: 100%;
+  margin-bottom: 22px;
+}
+
+.mu-preloader-title {
+  margin: 0;
+  font-family: 'Outfit', sans-serif;
+  font-size: 32px;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  line-height: 1.1;
+  text-transform: uppercase;
+  background: linear-gradient(180deg, #ffffff 0%, #e2e8f0 60%, #94a3b8 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.8));
+}
+
+@media (max-width: 480px) {
+  .mu-preloader-title {
+    font-size: 26px;
+    letter-spacing: 0.12em;
+  }
+}
+
+.mu-preloader-sub {
+  display: inline-block;
+  margin-top: 8px;
+  padding: 3px 10px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  font-family: 'Space Grotesk', 'Outfit', sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: #94a3b8;
+}
+
+/* Sleek HUD-Style Progress Bar */
+.mu-progress-box {
+  width: 100%;
+  margin-bottom: 18px;
+}
+
+.mu-progress-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-family: 'Outfit', sans-serif;
+  margin-bottom: 8px;
+  padding: 0 1px;
+}
+
+.mu-status-label-wrap {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+  max-width: 72%;
+}
+
+.mu-status-pulse-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #ef4444;
+  box-shadow: 0 0 8px rgba(239, 68, 68, 0.8);
+  flex-shrink: 0;
+  animation: muDotBlink 1.8s infinite ease-in-out;
+}
+
+@keyframes muDotBlink {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.35; transform: scale(0.85); }
+}
+
+#muStatusMsg {
+  color: #cbd5e1;
+  font-size: 12px;
+  font-weight: 500;
+  text-overflow: ellipsis;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+#muStatusDetail {
+  color: #f1f5f9;
+  font-family: 'Space Grotesk', monospace;
+  font-size: 12.5px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  flex-shrink: 0;
+  margin-left: 8px;
+}
+
+.mu-bar-track {
+  width: 100%;
+  height: 8px;
+  background: rgba(0, 0, 0, 0.65);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 4px;
+  padding: 1.5px;
+  position: relative;
+  overflow: hidden;
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.8);
+}
+
+.mu-bar-fill {
+  height: 100%;
+  width: 2%;
+  border-radius: 2px;
+  background: linear-gradient(90deg, #991b1b 0%, #dc2626 50%, #f87171 100%);
+  box-shadow: 0 0 10px rgba(239, 68, 68, 0.6);
+  position: relative;
+  transition: width 0.22s ease-out;
+}
+
+.mu-bar-plasma {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.4) 50%, transparent 100%);
+  animation: muShimmer 1.8s infinite linear;
+}
+
+@keyframes muShimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+/* Minimalist Clean Tips Box */
+.mu-tips-box {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 42px;
+  padding: 8px 12px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 6px;
+  text-align: left;
+}
+
+.mu-tip-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 6px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: #94a3b8;
+  flex-shrink: 0;
+}
+
+.mu-tip-msg {
+  flex: 1;
+  font-family: 'Outfit', sans-serif;
+  font-size: 11.5px;
+  font-weight: 500;
+  line-height: 1.45;
+  color: #94a3b8;
+  transition: opacity 0.3s ease;
+}
