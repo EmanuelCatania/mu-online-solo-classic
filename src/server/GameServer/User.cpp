@@ -2100,39 +2100,13 @@ void gObjUserKill(int aIndex)
 
 bool gObjInventorySearchSerialNumber(LPOBJ lpObj, DWORD serial)
 {
-	int count = 0;
-
-	for (int n = 0; n < INVENTORY_SIZE; n++)
-	{
-		if (lpObj->Inventory[n].m_Serial != 0 && lpObj->Inventory[n].m_Serial == serial && (count++) > 0)
-		{
-			gNotice.GCNoticeSend(lpObj->Index, 1, gMessage.GetTextMessage(54, lpObj->Lang));
-
-			gObjUserKill(lpObj->Index);
-
-			return 0;
-		}
-	}
-
+	// Duplicate item check disabled for solo mode
 	return 1;
 }
 
 bool gObjWarehouseSearchSerialNumber(LPOBJ lpObj, DWORD serial)
 {
-	int count = 0;
-
-	for (int n = 0; n < WAREHOUSE_SIZE; n++)
-	{
-		if (lpObj->Warehouse[n].m_Serial != 0 && lpObj->Warehouse[n].m_Serial == serial && (count++) > 0)
-		{
-			gNotice.GCNoticeSend(lpObj->Index, 1, gMessage.GetTextMessage(54, lpObj->Lang));
-
-			gObjUserKill(lpObj->Index);
-
-			return 0;
-		}
-	}
-
+	// Duplicate item check disabled for solo mode
 	return 1;
 }
 

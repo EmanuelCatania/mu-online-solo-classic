@@ -13,6 +13,7 @@
 #include <fstream>
 #include <filesystem>
 #include <cstring>
+#include <ctime>
 
 namespace fs = std::filesystem;
 
@@ -449,7 +450,7 @@ void SoloDataServer_ProcessPacket(BYTE* lpMsg, int size)
 					pRecv.X = lpSend->X;
 					pRecv.Y = lpSend->Y;
 					pRecv.Map = lpSend->Map;
-					static DWORD s_itemSerial = 100000;
+					static DWORD s_itemSerial = static_cast<DWORD>(std::time(nullptr));
 					pRecv.Serial = ++s_itemSerial;
 					pRecv.ItemIndex = lpSend->ItemIndex;
 					pRecv.Level = lpSend->Level;
