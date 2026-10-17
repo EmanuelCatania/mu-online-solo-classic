@@ -1,0 +1,20 @@
+{
+  "id": "loading",
+  "title": "Лоадінг сцена",
+  "capturedAt": "2026-10-16T08:50:00.000Z",
+  "build": "login56",
+  "git": "559d522",
+  "page": "http://127.0.0.1:8765/shell_login.html?t=login56",
+  "scene": "loading",
+  "sceneFlag": 3,
+  "step": "Після Enter на DarkWizard, кадр Loading перед ареною",
+  "character": "DarkWizard",
+  "map": 0,
+  "tile": "",
+  "canvas": {
+    "w": 640,
+    "h": 480
+  },
+  "note": "",
+  "updatedAt": "2026-10-16T09:15:06.748Z"
+}

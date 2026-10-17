@@ -1,0 +1,181 @@
+<!doctype html>
+<html lang="uk">
+<head>
+  <meta charset="utf-8">
+  <title>Опорні кадри клієнта</title>
+  <style>
+    body { margin: 0; font: 15px/1.4 sans-serif; background: #161616; color: #eee; }
+    header, main { max-width: 920px; margin: 0 auto; padding: 16px; }
+    h1 { font-size: 20px; margin: 0 0 8px; }
+    p { margin: 0 0 12px; color: #bbb; }
+    form, article { background: #222; border: 1px solid #333; padding: 12px; margin: 0 0 16px; }
+    label { display: block; margin: 8px 0 4px; color: #ccc; }
+    input, select, textarea { width: 100%; box-sizing: border-box; background: #111; color: #eee; border: 1px solid #444; padding: 6px; }
+    textarea { min-height: 90px; }
+    .row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    button { margin-top: 10px; background: #3a3a3a; color: #fff; border: 1px solid #666; padding: 6px 12px; cursor: pointer; }
+    img { width: 100%; height: auto; background: #000; image-rendering: pixelated; }
+    .meta { color: #aaa; font-size: 13px; margin: 8px 0; }
+    .saved { color: #9d9; margin-left: 8px; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Опорні кадри</h1>
+    <p id="git"></p>
+  </header>
+  <main>
+    <form id="add">
+      <h2>Новий кадр</h2>
+      <label>Файл PNG
+        <input id="file" type="file" accept="image/png" required>
+      </label>
+      <div class="row">
+        <div>
+          <label>Ід, латиницею (login-servers)</label>
+          <input id="id" required pattern="[A-Za-z0-9][A-Za-z0-9-]{0,40}" placeholder="login-servers">
+        </div>
+        <div>
+          <label>Коротка назва</label>
+          <input id="title" placeholder="Список серверів">
+        </div>
+      </div>
+      <div class="row">
+        <div>
+          <label>Збірка (токен сторінки)</label>
+          <input id="build" placeholder="login55">
+        </div>
+        <div>
+          <label>Сцена</label>
+          <select id="scene"></select>
+        </div>
+      </div>
+      <div class="row">
+        <div>
+          <label>SceneFlag</label>
+          <input id="sceneFlag" inputmode="numeric" placeholder="2">
+        </div>
+        <div>
+          <label>Карта і клітинка, якщо це світ</label>
+          <input id="where" placeholder="map 6, tile 48,56">
+        </div>
+      </div>
+      <label>Що тільки що зробили</label>
+      <input id="step" placeholder="Клік по MuServer, канал ще не обраний">
+      <label>Персонаж</label>
+      <input id="character" placeholder="DarkWizard">
+      <button type="submit">Зберегти кадр</button>
+      <span id="addMsg" class="saved"></span>
+    </form>
+    <div id="list"></div>
+  </main>
+  <script>
+    const scenes = ['login', 'connecting', 'account', 'char-select', 'char-create', 'loading', 'world'];
+    const sceneSelect = document.querySelector('#scene');
+    for (const name of scenes) {
+      const opt = document.createElement('option');
+      opt.value = name;
+      opt.textContent = name;
+      sceneSelect.appendChild(opt);
+    }
+
+    function fileToPng(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(String(reader.result));
+        reader.onerror = () => reject(reader.error);
+        reader.readAsDataURL(file);
+      });
+    }
+
+    async function load() {
+      const res = await fetch('/api/shots');
+      const data = await res.json();
+      document.querySelector('#git').textContent = data.git
+        ? 'Поточний git ' + data.git + '. Під кадром пиши, що на ньому не так.'
+        : 'Під кадром пиши, що на ньому не так.';
+      const list = document.querySelector('#list');
+      list.innerHTML = '';
+      for (const shot of data.shots) {
+        if (!shot.hasImage) continue;
+        const article = document.createElement('article');
+        const where = [shot.map != null ? 'map ' + shot.map : '', shot.tile || ''].filter(Boolean).join(' ');
+        article.innerHTML =
+          '<h2></h2>' +
+          '<img alt="">' +
+          '<div class="meta"></div>' +
+          '<label>Що не так</label>' +
+          '<textarea></textarea>' +
+          '<button type="button">Зберегти нотатку</button>' +
+          '<span class="saved"></span>';
+        article.querySelector('h2').textContent = shot.title || shot.id;
+        const img = article.querySelector('img');
+        img.alt = shot.title || shot.id;
+        img.src = '/shots/' + shot.id + '.png?t=' + encodeURIComponent(shot.updatedAt || shot.capturedAt || '');
+        article.querySelector('.meta').textContent = [
+          shot.id,
+          shot.build && ('build ' + shot.build),
+          shot.git && ('git ' + shot.git),
+          shot.scene,
+          shot.sceneFlag != null && ('flag ' + shot.sceneFlag),
+          shot.character,
+          where,
+          shot.step
+        ].filter(Boolean).join(' · ');
+        const box = article.querySelector('textarea');
+        box.value = shot.note || '';
+        article.querySelector('button').addEventListener('click', async () => {
+          const saved = article.querySelector('.saved');
+          saved.textContent = '';
+          const put = await fetch('/api/shots/' + shot.id + '/note', {
+            method: 'POST',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({ note: box.value }),
+          });
+          saved.textContent = put.ok ? 'збережено' : 'не збереглось';
+        });
+        list.appendChild(article);
+      }
+    }
+
+    document.querySelector('#add').addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const msg = document.querySelector('#addMsg');
+      msg.textContent = '';
+      const file = document.querySelector('#file').files[0];
+      const where = document.querySelector('#where').value.trim();
+      const mapMatch = where.match(/map\s*(-?\d+)/i);
+      const tileMatch = where.match(/(\d+\s*,\s*\d+)/);
+      const flag = document.querySelector('#sceneFlag').value.trim();
+      const body = {
+        id: document.querySelector('#id').value.trim().toLowerCase(),
+        title: document.querySelector('#title').value.trim(),
+        build: document.querySelector('#build').value.trim(),
+        scene: document.querySelector('#scene').value,
+        sceneFlag: flag === '' ? null : Number(flag),
+        step: document.querySelector('#step').value.trim(),
+        character: document.querySelector('#character').value.trim(),
+        map: mapMatch ? Number(mapMatch[1]) : null,
+        tile: tileMatch ? tileMatch[1].replace(/\s/g, '') : '',
+        page: location.href,
+        pngBase64: await fileToPng(file),
+      };
+      const res = await fetch('/api/shots', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      if (!res.ok) {
+        msg.textContent = 'не збереглось';
+        return;
+      }
+      document.querySelector('#add').reset();
+      sceneSelect.value = 'login';
+      await load();
+      msg.textContent = 'кадр додано';
+    });
+
+    load();
+  </script>
+</body>
+</html>

@@ -1,0 +1,463 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+    <title>MU 0.97k WebGL2 smoke</title>
+    <style>
+      body { font-family: sans-serif; background: #111; color: #eee; }
+      canvas { background: #000; display: block; margin-top: 8px; }
+      #muKeyBtn, #muKeys, #muStick, #muRBtn { display: none; }
+      @media (pointer: coarse), (max-width: 900px) {
+        #muKeyBtn { display: flex; }
+        #muStick { display: block; }
+        #muRBtn { display: flex; }
+      }
+      #muKeyBtn {
+        position: fixed; right: 10px; top: 42%; z-index: 8;
+        width: 46px; height: 46px; padding: 0; border-radius: 10px;
+        border: 1px solid rgba(255,255,255,.35); background: rgba(20,20,20,.72);
+        color: #eee; align-items: center; justify-content: center;
+        touch-action: none; user-select: none; -webkit-user-select: none;
+      }
+      #muKeyBtn.on { background: rgba(70,70,70,.9); }
+      #muKeys {
+        position: fixed; left: 0; right: 0; bottom: 0; z-index: 7;
+        padding: 6px 4px calc(6px + env(safe-area-inset-bottom));
+        background: rgba(12,12,12,.92); touch-action: none; user-select: none;
+        -webkit-user-select: none; -webkit-touch-callout: none;
+      }
+      #muKeys.on { display: block; }
+      #muKeys .row { display: flex; gap: 3px; margin: 3px 0; }
+      #muKeys button {
+        flex: 1; min-height: 40px; border-radius: 6px; border: 0;
+        background: #3a3a3a; color: #f2f2f2; font: 15px/1 sans-serif;
+        touch-action: none; padding: 0;
+      }
+      #muKeys button.wide { flex: 1.6; }
+      #muKeys button.space { flex: 4; }
+      #muKeys button.lit { background: #6a6a6a; color: #fff; }
+      #muStick {
+        position: fixed; left: max(14px, env(safe-area-inset-left)); top: auto;
+        bottom: max(12px, env(safe-area-inset-bottom));
+        z-index: 6; width: 128px; height: 128px; border-radius: 50%;
+        background: rgba(20,20,20,.35); border: 2px solid rgba(255,255,255,.28);
+        touch-action: none; user-select: none; -webkit-user-select: none;
+      }
+      #muStickKnob {
+        position: absolute; left: 50%; top: 50%; width: 54px; height: 54px;
+        margin: -27px 0 0 -27px; border-radius: 50%;
+        background: rgba(230,230,230,.82); pointer-events: none;
+      }
+      #muRBtn {
+        position: fixed; right: 10px; top: calc(42% + 58px); z-index: 8;
+        width: 64px; height: 64px; padding: 0; border-radius: 50%;
+        border: 1px solid rgba(255,255,255,.35); background: rgba(20,20,20,.72);
+        color: #eee; align-items: center; justify-content: center;
+        touch-action: none; user-select: none; -webkit-user-select: none;
+      }
+      #muRBtn.on { background: rgba(90,40,40,.9); }
+      pre { white-space: pre-wrap; }
+    </style>
+  </head>
+  <body>
+    <div id="status">Starting…</div>
+    <pre id="log"></pre>
+    <canvas id="canvas" width="640" height="480" tabindex="-1" oncontextmenu="return false"></canvas>
+    <div id="muStick" aria-label="Move"><div id="muStickKnob"></div></div>
+    <button id="muRBtn" type="button" aria-label="Right mouse">
+      <svg width="28" height="28" viewBox="0 0 28 28" fill="none" stroke="currentColor" stroke-width="1.6">
+        <rect x="7" y="3" width="14" height="22" rx="7"></rect>
+        <path d="M14 3v9h7"></path>
+        <path d="M15 6.5h4.2" stroke-width="2.4"></path>
+      </svg>
+    </button>
+    <button id="muKeyBtn" type="button" aria-label="Keyboard">
+      <svg width="26" height="18" viewBox="0 0 26 18" fill="none" stroke="currentColor" stroke-width="1.6">
+        <rect x="1" y="1" width="24" height="16" rx="2"></rect>
+        <path d="M4 5h2M8 5h2M12 5h2M16 5h2M20 5h2M5 9h2M9 9h2M13 9h2M17 9h2M6 13h14"></path>
+      </svg>
+    </button>
+    <div id="muKeys">
+      <div class="row">
+        <button type="button" data-vk="49" data-ch="49">1</button>
+        <button type="button" data-vk="50" data-ch="50">2</button>
+        <button type="button" data-vk="51" data-ch="51">3</button>
+        <button type="button" data-vk="52" data-ch="52">4</button>
+        <button type="button" data-vk="53" data-ch="53">5</button>
+        <button type="button" data-vk="54" data-ch="54">6</button>
+        <button type="button" data-vk="55" data-ch="55">7</button>
+        <button type="button" data-vk="56" data-ch="56">8</button>
+        <button type="button" data-vk="57" data-ch="57">9</button>
+        <button type="button" data-vk="48" data-ch="48">0</button>
+      </div>
+      <div class="row">
+        <button type="button" data-vk="81" data-ch="113">q</button>
+        <button type="button" data-vk="87" data-ch="119">w</button>
+        <button type="button" data-vk="69" data-ch="101">e</button>
+        <button type="button" data-vk="82" data-ch="114">r</button>
+        <button type="button" data-vk="84" data-ch="116">t</button>
+        <button type="button" data-vk="89" data-ch="121">y</button>
+        <button type="button" data-vk="85" data-ch="117">u</button>
+        <button type="button" data-vk="73" data-ch="105">i</button>
+        <button type="button" data-vk="79" data-ch="111">o</button>
+        <button type="button" data-vk="80" data-ch="112">p</button>
+      </div>
+      <div class="row">
+        <button type="button" data-vk="65" data-ch="97">a</button>
+        <button type="button" data-vk="83" data-ch="115">s</button>
+        <button type="button" data-vk="68" data-ch="100">d</button>
+        <button type="button" data-vk="70" data-ch="102">f</button>
+        <button type="button" data-vk="71" data-ch="103">g</button>
+        <button type="button" data-vk="72" data-ch="104">h</button>
+        <button type="button" data-vk="74" data-ch="106">j</button>
+        <button type="button" data-vk="75" data-ch="107">k</button>
+        <button type="button" data-vk="76" data-ch="108">l</button>
+      </div>
+      <div class="row">
+        <button type="button" class="wide" data-lock="16">shift</button>
+        <button type="button" data-vk="90" data-ch="122">z</button>
+        <button type="button" data-vk="88" data-ch="120">x</button>
+        <button type="button" data-vk="67" data-ch="99">c</button>
+        <button type="button" data-vk="86" data-ch="118">v</button>
+        <button type="button" data-vk="66" data-ch="98">b</button>
+        <button type="button" data-vk="78" data-ch="110">n</button>
+        <button type="button" data-vk="77" data-ch="109">m</button>
+        <button type="button" class="wide" data-vk="8" data-ch="8">⌫</button>
+      </div>
+      <div class="row">
+        <button type="button" data-vk="27">esc</button>
+        <button type="button" data-lock="17">ctrl</button>
+        <button type="button" class="space" data-vk="32" data-ch="32">space</button>
+        <button type="button" data-vk="37">←</button>
+        <button type="button" data-vk="38">↑</button>
+        <button type="button" data-vk="40">↓</button>
+        <button type="button" data-vk="39">→</button>
+        <button type="button" class="wide" data-vk="13" data-ch="13">enter</button>
+      </div>
+    </div>
+    <script>
+      window.muInstallKeys = function () {
+        var btn = document.getElementById('muKeyBtn');
+        var pad = document.getElementById('muKeys');
+        if (!btn || !pad || btn._mu) return;
+        btn._mu = 1;
+        var held = {};
+        function send(down, vk, ch) {
+          if (typeof Module !== 'undefined' && Module._mu_key)
+            Module._mu_key(down ? 1 : 0, vk | 0, down ? (ch | 0) : 0);
+        }
+        function stop(ev) { ev.preventDefault(); ev.stopPropagation(); }
+        btn.addEventListener('pointerdown', function (ev) {
+          stop(ev);
+          var open = pad.classList.toggle('on');
+          btn.classList.toggle('on', open);
+        });
+        pad.addEventListener('pointerdown', function (ev) {
+          var key = ev.target.closest('button');
+          if (!key) return;
+          stop(ev);
+          if (key.getAttribute('data-lock')) {
+            var vk = key.getAttribute('data-lock') | 0;
+            var on = !key.classList.contains('lit');
+            key.classList.toggle('lit', on);
+            send(on, vk, 0);
+            return;
+          }
+          var vk = key.getAttribute('data-vk') | 0;
+          var ch = key.getAttribute('data-ch');
+          ch = ch == null ? 0 : (ch | 0);
+          if (ch >= 97 && ch <= 122 && pad.querySelector('[data-lock="16"].lit')) ch -= 32;
+          send(1, vk, ch);
+          var rep = 0;
+          if (ch) {
+            rep = setTimeout(function tick() {
+              var h = held[ev.pointerId];
+              if (!h) return;
+              send(1, vk, ch);
+              h.timer = setTimeout(tick, 45);
+            }, 420);
+          }
+          held[ev.pointerId] = { vk: vk, timer: rep };
+          key.setPointerCapture(ev.pointerId);
+        });
+        function release(ev) {
+          var h = held[ev.pointerId];
+          if (!h) return;
+          clearTimeout(h.timer);
+          send(0, h.vk, 0);
+          delete held[ev.pointerId];
+        }
+        pad.addEventListener('pointerup', release);
+        pad.addEventListener('pointercancel', release);
+        window.addEventListener('blur', function () {
+          Object.keys(held).forEach(function (id) {
+            clearTimeout(held[id].timer);
+            send(0, held[id].vk, 0);
+          });
+          held = {};
+        });
+      };
+      window.muInstallTouch = function () {
+        var stick = document.getElementById('muStick');
+        var knob = document.getElementById('muStickKnob');
+        var rbtn = document.getElementById('muRBtn');
+        if (!stick || stick._mu) return;
+        stick._mu = 1;
+        var radius = 40;
+        var lastX = 0, lastY = 0, timer = 0, pid = -1;
+        function stickSend() {
+          if (typeof Module !== 'undefined' && Module._mu_stick)
+            Module._mu_stick(lastX | 0, lastY | 0);
+        }
+        function place(ev) {
+          var box = stick.getBoundingClientRect();
+          var dx = ev.clientX - (box.left + box.width / 2);
+          var dy = ev.clientY - (box.top + box.height / 2);
+          var len = Math.sqrt(dx * dx + dy * dy);
+          var kx = 0, ky = 0;
+          lastX = 0;
+          lastY = 0;
+          if (len > 8) {
+            var clamped = Math.min(len, radius);
+            var s = clamped / len;
+            kx = dx * s;
+            ky = dy * s;
+            lastX = Math.round((dx / len) * (clamped / radius) * 100);
+            lastY = Math.round((dy / len) * (clamped / radius) * 100);
+          }
+          knob.style.transform = 'translate(' + kx + 'px,' + ky + 'px)';
+          stickSend();
+        }
+        function arm() {
+          if (timer) return;
+          timer = setInterval(stickSend, 40);
+        }
+        function disarm() {
+          lastX = 0;
+          lastY = 0;
+          knob.style.transform = '';
+          stickSend();
+          if (timer) { clearInterval(timer); timer = 0; }
+          pid = -1;
+        }
+        stick.addEventListener('pointerdown', function (ev) {
+          ev.preventDefault();
+          ev.stopPropagation();
+          pid = ev.pointerId;
+          place(ev);
+          arm();
+          try { stick.setPointerCapture(ev.pointerId); } catch (e) {}
+        });
+        stick.addEventListener('pointermove', function (ev) {
+          if (ev.pointerId !== pid) return;
+          ev.preventDefault();
+          place(ev);
+        });
+        stick.addEventListener('pointerup', function (ev) {
+          if (ev.pointerId !== pid) return;
+          ev.preventDefault();
+          disarm();
+        });
+        stick.addEventListener('pointercancel', disarm);
+        if (rbtn && !rbtn._mu) {
+          rbtn._mu = 1;
+          var rpid = -1;
+          function rsend(down) {
+            if (typeof Module !== 'undefined' && Module._mu_rbutton)
+              Module._mu_rbutton(down ? 1 : 0);
+          }
+          rbtn.addEventListener('pointerdown', function (ev) {
+            ev.preventDefault();
+            ev.stopPropagation();
+            rpid = ev.pointerId;
+            rbtn.classList.add('on');
+            rsend(1);
+            try { rbtn.setPointerCapture(ev.pointerId); } catch (e) {}
+          });
+          function rlift(ev) {
+            if (ev && ev.pointerId !== rpid) return;
+            rbtn.classList.remove('on');
+            rsend(0);
+            rpid = -1;
+          }
+          rbtn.addEventListener('pointerup', rlift);
+          rbtn.addEventListener('pointercancel', rlift);
+        }
+        window.addEventListener('blur', function () { disarm(); if (rbtn) { rbtn.classList.remove('on'); if (Module._mu_rbutton) Module._mu_rbutton(0); } });
+      };
+      // PC gamepads and the Steam Deck controls share the standard mapping:
+      // left stick walks, right stick moves the cursor, RT/RB holds the right
+      // button, A holds the left button, B and Back are Esc, Start is Enter.
+      window.muInstallPad = function () {
+        if (window._muPad) return;
+        window._muPad = 1;
+        var cursor = { x: 320, y: 240 };
+        var latched = {};
+        var stickOn = 0, rDown = 0, lDown = 0, seen = 0;
+        function call(name, args) {
+          var fn = (typeof Module !== 'undefined') ? Module[name] : null;
+          if (fn) fn.apply(null, args);
+        }
+        function setKey(name, down, vk, ch) {
+          if (down && !latched[name]) { latched[name] = vk; call('_mu_key', [1, vk, ch || 0]); }
+          if (!down && latched[name]) { var vk0 = latched[name]; latched[name] = 0; call('_mu_key', [0, vk0, 0]); }
+        }
+        function releaseAll() {
+          if (stickOn) { stickOn = 0; call('_mu_stick', [0, 0]); }
+          if (rDown) { rDown = 0; call('_mu_rbutton', [0]); }
+          if (lDown) { lDown = 0; call('_mu_lbutton', [0]); }
+          Object.keys(latched).forEach(function (name) { setKey(name, 0, 0, 0); });
+        }
+        function pressed(pad, i) {
+          var b = pad.buttons && pad.buttons[i];
+          return !!(b && (b.pressed || b.value > 0.45));
+        }
+        function axis(pad, i) {
+          var v = (pad.axes && pad.axes[i]) || 0;
+          return Math.abs(v) < 0.18 ? 0 : v;
+        }
+        window.muReadPad = function (pad) {
+          if (!pad || !pad.connected) { if (seen) releaseAll(); seen = 0; return; }
+          seen = 1;
+          var lx = axis(pad, 0), ly = axis(pad, 1);
+          if (lx || ly) { stickOn = 1; call('_mu_stick', [Math.round(lx * 100), Math.round(ly * 100)]); }
+          else if (stickOn) { stickOn = 0; call('_mu_stick', [0, 0]); }
+          var rx = axis(pad, 2), ry = axis(pad, 3);
+          if (!stickOn && (rx || ry)) {
+            cursor.x = Math.max(0, Math.min(639, cursor.x + rx * 14));
+            cursor.y = Math.max(0, Math.min(479, cursor.y + ry * 14));
+            call('_mu_cursor', [cursor.x | 0, cursor.y | 0]);
+          }
+          var attack = pressed(pad, 7) || pressed(pad, 5);
+          if (attack !== !!rDown) { rDown = attack ? 1 : 0; call('_mu_rbutton', [rDown]); }
+          var south = pressed(pad, 0);
+          if (!stickOn && south !== !!lDown) { lDown = south ? 1 : 0; call('_mu_lbutton', [lDown]); }
+          if (stickOn && lDown) { lDown = 0; call('_mu_lbutton', [0]); }
+          setKey('up', pressed(pad, 12), 38, 0);
+          setKey('down', pressed(pad, 13), 40, 0);
+          setKey('left', pressed(pad, 14), 37, 0);
+          setKey('right', pressed(pad, 15), 39, 0);
+          setKey('b', pressed(pad, 1), 27, 0);
+          setKey('back', pressed(pad, 8), 27, 0);
+          setKey('start', pressed(pad, 9), 13, 13);
+        };
+        function tick() {
+          var pad = null;
+          var list = navigator.getGamepads ? navigator.getGamepads() : [];
+          for (var i = 0; i < list.length; i++) {
+            if (list[i] && list[i].connected) { pad = list[i]; break; }
+          }
+          window.muReadPad(pad);
+          requestAnimationFrame(tick);
+        }
+        requestAnimationFrame(tick);
+      };
+      window.muInstallAudio = function () {
+        if (window._muAudio) return;
+        window._muAudio = 1;
+        var canvas = document.getElementById('canvas');
+        function sync() {
+          // The canvas covers the page, and game clicks swallow the default
+          // focus, so the canvas is rarely the active element. Mute only when
+          // the tab itself is in the background.
+          var on = document.visibilityState === 'visible' && document.hasFocus();
+          if (typeof Module !== 'undefined' && Module._mu_audible)
+            Module._mu_audible(on ? 1 : 0);
+        }
+        function resume() {
+          canvas.focus({ preventScroll: true });
+          sync();
+          var list = window.miniaudio && window.miniaudio.devices;
+          if (!list) return;
+          for (var i = 0; i < list.length; i++) {
+            var device = list[i];
+            if (device && device.webaudio && device.webaudio.resume)
+              device.webaudio.resume();
+          }
+        }
+        document.addEventListener('mousedown', function (ev) {
+          var t = ev.target && ev.target.closest && ev.target.closest('#muKeys, #muStick, #muKeyBtn, #muRBtn');
+          if (!t) return;
+          ev.preventDefault();
+          canvas.focus({ preventScroll: true });
+        }, true);
+        document.addEventListener('pointerdown', resume, true);
+        window.addEventListener('blur', sync);
+        window.addEventListener('focus', sync);
+        document.addEventListener('visibilitychange', sync);
+        sync();
+      };
+      var statusElement = document.getElementById('status');
+      var canvasElement = document.getElementById('canvas');
+      canvasElement.addEventListener('contextmenu', function (ev) { ev.preventDefault(); });
+      var logElement = document.getElementById('log');
+      var Module = {
+        print: function () {
+          console.log(Array.prototype.slice.call(arguments).join(' '));
+        },
+        printErr: function () {
+          var text = Array.prototype.slice.call(arguments).join(' ');
+          console.error(text);
+          var lines = logElement.textContent ? logElement.textContent.split('\n') : [];
+          lines.push(text);
+          if (lines.length > 40) lines = lines.slice(lines.length - 40);
+          logElement.textContent = lines.join('\n');
+        },
+        canvas: canvasElement,
+        onRuntimeInitialized: function () {
+          if (window.muInstallKeys) window.muInstallKeys();
+          if (window.muInstallTouch) window.muInstallTouch();
+          if (window.muInstallPad) window.muInstallPad();
+          if (window.muInstallAudio) window.muInstallAudio();
+        },
+        setStatus: function (text) { statusElement.textContent = text; },
+        preRun: [function () {
+          var orig = FS.lookupPath;
+          function child(node, name) {
+            if (!node || !node.contents) return null;
+            if (node.contents[name]) return { name: name, node: node.contents[name] };
+            var want = name.toLowerCase();
+            for (var k in node.contents) {
+              if (k.toLowerCase() === want) return { name: k, node: node.contents[k] };
+            }
+            return null;
+          }
+          FS.lookupPath = function (path, opts) {
+            if (typeof path === 'string') path = path.split('\\').join('/');
+            var exact;
+            try {
+              exact = orig(path, opts);
+            } catch (err) {
+              if (!err || err.errno !== 44) throw err;
+              exact = null;
+            }
+            if (exact && exact.node) return exact;
+            var abs = PATH.isAbs(path) ? path : (FS.cwd() + '/' + path);
+            var parts = abs.split('/').filter(function (p) { return p && p !== '.'; });
+            var node = FS.root;
+            var built = [];
+            for (var i = 0; i < parts.length; i++) {
+              if (parts[i] === '..') {
+                built.pop();
+                node = (node && node.parent) || FS.root;
+                continue;
+              }
+              var hit = child(node, parts[i]);
+              if (!hit) {
+                if (exact) return exact;
+                throw new FS.ErrnoError(44);
+              }
+              built.push(hit.name);
+              node = hit.node;
+              if (node && node.mounted && node.mounted.root && i !== parts.length - 1)
+                node = node.mounted.root;
+            }
+            return orig('/' + built.join('/'), opts);
+          };
+        }]
+      };
+    </script>
+    {{{ SCRIPT }}}
+  </body>
+</html>

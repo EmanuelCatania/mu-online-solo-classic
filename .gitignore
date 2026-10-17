@@ -21,3 +21,8 @@ Thumbs.db
 
 # Reference / legacy server sources
 reference/
+
+# Client WebAssembly build outputs & large preloaded data files (> 100MB)
+src/client/out/
+web/client/*.data
+

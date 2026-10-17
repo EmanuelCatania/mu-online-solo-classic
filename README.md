@@ -51,31 +51,42 @@ The engine provides 3 dedicated game modes with completely **isolated save slots
 ```
 mu-online-solo-classic/
 ├── src/
-│   └── server/
-│       ├── Common/
-│       │   └── Platform.h          # Win32 API emulation types for POSIX & Emscripten
-│       ├── GameServer/             # Original 0.97k GameServer logic (combat, monsters, items, maps)
-│       ├── Solo/                   # Solo WebAssembly engine adaptations
-│       │   ├── SoloServer.h        # C API exported functions for WASM / JS
-│       │   ├── SoloServerMain.cpp  # Lifecycle, initialization, main 20 TPS tick loop
-│       │   ├── SoloDifficulty.h    # Realm rates & difficulty multipliers interface
-│       │   ├── SoloDifficulty.cpp  # Multiplier implementations (EXP, HP, DMG, drops)
-│       │   ├── SoloTransport.h     # Zero-copy packet delivery interface
-│       │   ├── SoloSocketManager.cpp # In-memory socket & connection manager
-│       │   ├── SoloSocketManagerUdp.cpp # UDP socket dummy implementation
-│       │   ├── SoloConnection.cpp  # Virtual JoinServer / DataServer links
-│       │   └── SoloDataServer.cpp  # Local filesystem character & vault storage
-│       ├── Data/                   # Original 0.97k game tables, configs, and .att terrain maps
-│       ├── CMakeLists.txt          # Emscripten CMake build configuration
-│       └── test_node.cjs           # Node.js automated test runner for the WASM build
+│   ├── server/                     # Solo WebAssembly GameServer engine
+│   │   ├── Common/
+│   │   │   └── Platform.h          # Win32 API emulation types for POSIX & Emscripten
+│   │   ├── GameServer/             # Original 0.97k GameServer logic (combat, monsters, items, maps)
+│   │   ├── Solo/                   # Solo WebAssembly engine adaptations
+│   │   │   ├── SoloServer.h        # C API exported functions for WASM / JS
+│   │   │   ├── SoloServerMain.cpp  # Lifecycle, initialization, main 20 TPS tick loop
+│   │   │   ├── SoloDifficulty.h    # Realm rates & difficulty multipliers interface
+│   │   │   ├── SoloDifficulty.cpp  # Multiplier implementations (EXP, HP, DMG, drops)
+│   │   │   ├── SoloTransport.h     # Zero-copy packet delivery interface
+│   │   │   ├── SoloSocketManager.cpp # In-memory socket & connection manager
+│   │   │   ├── SoloSocketManagerUdp.cpp # UDP socket dummy implementation
+│   │   │   ├── SoloConnection.cpp  # Virtual JoinServer / DataServer links
+│   │   │   └── SoloDataServer.cpp  # Local filesystem character & vault storage
+│   │   ├── Data/                   # Original 0.97k game tables, configs, and .att terrain maps
+│   │   ├── CMakeLists.txt          # Emscripten CMake build configuration
+│   │   └── test_node.cjs           # Node.js automated test runner for the WASM build
+│   └── client/                     # WebGL2 WebAssembly Client port
+│       ├── browser/                # WebGL2 immediate-mode pipeline, virtual stick, keyboard & shell
+│       ├── gateway/                # WebSocket TCP gateway proxy
+│       ├── docs/                   # Milestone porting specifications (M0-M7)
+│       ├── review/                 # Captured scene screenshots & verification specs
+│       └── link-login.bat          # Client build and link automation
 ├── web/
 │   ├── index.html                  # Interactive web dashboard & testbed GUI
 │   ├── server_worker.js            # Dedicated Web Worker hosting the WASM GameServer
-│   ├── serve.cjs                   # Lightweight local static HTTP server (Node.js)
+│   ├── serve.cjs                   # Lightweight local streaming HTTP server with CORS headers
 │   ├── muserver.wasm               # Compiled GameServer WebAssembly binary (~698 KB)
 │   ├── muserver.js                 # Emscripten JavaScript runtime glue & module loader
-│   └── muserver.data               # Preloaded virtual file system containing /Data (~1.47 MB)
-└── reference/                      # (Ignored) Original reference C++ sources
+│   ├── muserver.data               # Preloaded virtual file system containing /Data (~1.47 MB)
+│   └── client/                     # Playable 3D WebGL2 WASM Game Client
+│       ├── index.html              # Responsive WebGL2 canvas with touch & gamepad HUD
+│       ├── shell_login.js          # Client Emscripten runtime glue
+│       ├── shell_login.wasm        # Client WebAssembly engine binary (~3.35 MB)
+│       └── shell_login.data        # Client preloaded game assets (~219 MB, git-ignored)
+└── reference/                      # (Ignored) Original reference C++ sources (Server & Client)
 ```
 
 ---
@@ -267,7 +278,8 @@ int SoloServer_GetPlayerCount();
 - [x] **Stage 4**: Build Web Worker server harness & interactive packet inspection testbed.
 - [x] **Stage 5**: AES-256-GCM + SHA-256 encrypted browser persistence with standalone file export/import.
 - [x] **Stage 6**: Multi-difficulty realm system (Easy, Medium, Hard) with isolated storage and anti-trade enforcement.
-- [ ] **Stage 7**: Integrate 3D WebGL / WebAssembly client renderer for full playable browser gameplay.
+- [x] **Stage 7**: Integrate 3D WebGL2 / WebAssembly client renderer with touch controls, virtual joystick, gamepad, and audio.
+- [ ] **Stage 8**: Direct In-Memory bridge between WebGL2 Client and Solo GameServer (bypassing WebSocket proxy).
 
 ---
 
