@@ -1,0 +1,9 @@
+//==============================================================
+// SHOP
+//==============================================================
+//SLOTS X = 0~7 , Y = 0~14 , * = Orden original
+//Index	Level	Dur	Skill	Luck	Option	ExcOp	SlotX	SlotY	Comment
+13 14 0 -1 0 0 0 0 0 0 // Loch's Feather
+14 9 0 -1 0 0 0 0 1 0 // Ale
+14 10 0 -1 0 0 0 0 2 0 // Town Portal Scroll
+end

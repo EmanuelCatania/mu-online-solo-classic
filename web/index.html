@@ -1,0 +1,661 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MU Online Classic (0.97k) - Solo WebAssembly Server</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700;900&family=JetBrains+Mono:wght@400;500;700&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-base: #0b0f19;
+            --bg-surface: #111827;
+            --bg-elevated: #1e293b;
+            --border-color: rgba(255, 255, 255, 0.08);
+            --border-highlight: rgba(217, 119, 6, 0.35);
+            --primary: #f59e0b;
+            --primary-glow: rgba(245, 158, 11, 0.25);
+            --secondary: #3b82f6;
+            --secondary-glow: rgba(59, 130, 246, 0.25);
+            --accent-green: #10b981;
+            --accent-red: #ef4444;
+            --text-main: #f3f4f6;
+            --text-muted: #94a3b8;
+            --text-dim: #64748b;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Outfit', -apple-system, sans-serif;
+            background-color: var(--bg-base);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            background-image: 
+                radial-gradient(ellipse at 15% 10%, rgba(245, 158, 11, 0.08) 0%, transparent 40%),
+                radial-gradient(ellipse at 85% 90%, rgba(59, 130, 246, 0.08) 0%, transparent 40%);
+            background-attachment: fixed;
+        }
+
+        header {
+            padding: 1.25rem 2rem;
+            border-bottom: 1px solid var(--border-color);
+            background: rgba(17, 24, 39, 0.7);
+            backdrop-filter: blur(12px);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 50;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .brand h1 {
+            font-family: 'Cinzel', serif;
+            font-size: 1.5rem;
+            font-weight: 900;
+            letter-spacing: 0.1em;
+            background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 50%, #d97706 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 0 24px var(--primary-glow);
+        }
+
+        .version-badge {
+            background: rgba(245, 158, 11, 0.12);
+            color: #fbbf24;
+            font-size: 0.75rem;
+            font-weight: 600;
+            padding: 0.25rem 0.6rem;
+            border-radius: 9999px;
+            border: 1px solid rgba(245, 158, 11, 0.3);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .server-status {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            font-size: 0.875rem;
+            color: var(--text-muted);
+        }
+
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background-color: var(--accent-red);
+            box-shadow: 0 0 10px var(--accent-red);
+            transition: all 0.3s ease;
+        }
+
+        .status-dot.active {
+            background-color: var(--accent-green);
+            box-shadow: 0 0 12px var(--accent-green);
+        }
+
+        main {
+            flex: 1;
+            padding: 2rem;
+            max-width: 1600px;
+            margin: 0 auto;
+            width: 100%;
+            display: grid;
+            grid-template-columns: 360px 1fr;
+            gap: 1.75rem;
+        }
+
+        @media (max-width: 1024px) {
+            main {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .card {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+            backdrop-filter: blur(8px);
+        }
+
+        .card-title {
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--text-dim);
+            font-weight: 700;
+            margin-bottom: 1.25rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .stat-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+
+        .stat-box {
+            background: var(--bg-elevated);
+            padding: 1rem;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+        }
+
+        .stat-label {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            margin-bottom: 0.25rem;
+        }
+
+        .stat-value {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 1.35rem;
+            font-weight: 700;
+            color: #f8fafc;
+        }
+
+        .actions-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        .btn {
+            appearance: none;
+            border: none;
+            outline: none;
+            cursor: pointer;
+            font-family: inherit;
+            font-weight: 600;
+            font-size: 0.875rem;
+            padding: 0.75rem 1.25rem;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            user-select: none;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+            color: #111827;
+            box-shadow: 0 2px 10px var(--primary-glow);
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 16px var(--primary-glow);
+            filter: brightness(1.1);
+        }
+
+        .btn-secondary {
+            background: var(--bg-elevated);
+            color: var(--text-main);
+            border: 1px solid var(--border-color);
+        }
+
+        .btn-secondary:hover:not(:disabled) {
+            background: #273549;
+            border-color: rgba(255, 255, 255, 0.15);
+            transform: translateY(-1px);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+
+        .content-area {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .packet-stream {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            display: flex;
+            flex-direction: column;
+            height: 380px;
+            overflow: hidden;
+        }
+
+        .panel-header {
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(30, 41, 59, 0.4);
+        }
+
+        .table-container {
+            flex: 1;
+            overflow-y: auto;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.8rem;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+        }
+
+        th {
+            background: rgba(15, 23, 42, 0.8);
+            position: sticky;
+            top: 0;
+            padding: 0.75rem 1rem;
+            color: var(--text-dim);
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        td {
+            padding: 0.65rem 1rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+            white-space: nowrap;
+        }
+
+        tr:hover {
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .badge-dir {
+            font-size: 0.7rem;
+            font-weight: 700;
+            padding: 0.2rem 0.45rem;
+            border-radius: 4px;
+        }
+
+        .badge-out {
+            background: rgba(16, 185, 129, 0.15);
+            color: #34d399;
+            border: 1px solid rgba(16, 185, 129, 0.3);
+        }
+
+        .badge-in {
+            background: rgba(59, 130, 246, 0.15);
+            color: #60a5fa;
+            border: 1px solid rgba(59, 130, 246, 0.3);
+        }
+
+        .terminal {
+            background: #090d16;
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            display: flex;
+            flex-direction: column;
+            height: 320px;
+            overflow: hidden;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .terminal-body {
+            flex: 1;
+            padding: 1rem 1.25rem;
+            overflow-y: auto;
+            font-size: 0.825rem;
+            line-height: 1.6;
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+        }
+
+        .log-entry {
+            word-break: break-all;
+        }
+
+        .log-time {
+            color: var(--text-dim);
+            margin-right: 0.5rem;
+        }
+
+        .raw-hex {
+            color: #cbd5e1;
+            letter-spacing: 0.05em;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="brand">
+            <h1>MU Online Solo</h1>
+            <span class="version-badge">Classic 0.97k WASM</span>
+        </div>
+        <div class="server-status">
+            <span class="status-dot" id="statusDot"></span>
+            <span id="statusText">Initializing Server...</span>
+        </div>
+    </header>
+
+    <main>
+        <!-- Sidebar Controls -->
+        <div class="sidebar">
+            <div class="card">
+                <div class="card-title">
+                    <span>Server Metrics</span>
+                    <span id="tpsCounter" style="color: var(--accent-green); font-family: 'JetBrains Mono';">20 TPS</span>
+                </div>
+                <div class="stat-grid">
+                    <div class="stat-box">
+                        <div class="stat-label">Monsters Spawned</div>
+                        <div class="stat-value" id="monsterCount">3,245</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-label">Online Players</div>
+                        <div class="stat-value" id="playerCount">0</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-label">Packets RX / TX</div>
+                        <div class="stat-value" id="packetRatio">0 / 0</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-label">Active Maps</div>
+                        <div class="stat-value">17</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-title">Solo Player Handshake</div>
+                <div class="actions-group">
+                    <button class="btn btn-primary" id="btnConnect" onclick="connectPlayer()">
+                        1. Connect Player Session
+                    </button>
+                    <button class="btn btn-secondary" id="btnLogin" onclick="loginAccount()" disabled>
+                        2. Send Login (Account: solo)
+                    </button>
+                    <button class="btn btn-secondary" id="btnCharList" onclick="requestCharList()" disabled>
+                        3. Request Character List
+                    </button>
+                    <button class="btn btn-secondary" id="btnCreateChar" onclick="createDarkKnight()" disabled>
+                        4. Create Dark Knight (HeroDK)
+                    </button>
+                    <button class="btn btn-secondary" id="btnSelectChar" onclick="selectCharacter()" disabled>
+                        5. Enter Lorencia (Select HeroDK)
+                    </button>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-title">In-Game Actions</div>
+                <div class="actions-group">
+                    <button class="btn btn-secondary" id="btnWalk" onclick="sendWalk()" disabled>
+                        Walk: (125, 125) &rarr; (126, 126)
+                    </button>
+                    <button class="btn btn-secondary" id="btnAttack" onclick="sendAttack()" disabled>
+                        Attack Target (Spider / Bull)
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Inspection Area -->
+        <div class="content-area">
+            <!-- Packet Live Inspector -->
+            <div class="packet-stream">
+                <div class="panel-header">
+                    <div style="font-weight: 600; font-size: 0.9rem;">Live In-Memory Packet Inspector</div>
+                    <button class="btn btn-secondary" style="padding: 0.35rem 0.75rem; font-size: 0.75rem;" onclick="clearPackets()">Clear</button>
+                </div>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th style="width: 90px;">Time</th>
+                                <th style="width: 70px;">Dir</th>
+                                <th style="width: 70px;">Head</th>
+                                <th style="width: 70px;">Sub</th>
+                                <th style="width: 80px;">Size</th>
+                                <th>Description</th>
+                                <th>Raw Hex</th>
+                            </tr>
+                        </thead>
+                        <tbody id="packetTableBody">
+                            <!-- Packets added dynamically -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Server Console Output -->
+            <div class="terminal">
+                <div class="panel-header">
+                    <div style="font-weight: 600; font-size: 0.9rem;">GameServer Log Terminal</div>
+                    <button class="btn btn-secondary" style="padding: 0.35rem 0.75rem; font-size: 0.75rem;" onclick="clearLogs()">Clear</button>
+                </div>
+                <div class="terminal-body" id="logBody">
+                    <!-- Logs added dynamically -->
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        let worker = null;
+        let rxCount = 0;
+        let txCount = 0;
+        let activePlayerIndex = -1;
+
+        function appendLog(text, color = '#cbd5e1') {
+            const body = document.getElementById('logBody');
+            const now = new Date().toTimeString().split(' ')[0];
+            const div = document.createElement('div');
+            div.className = 'log-entry';
+            div.style.color = color;
+            div.innerHTML = `<span class="log-time">[${now}]</span> ${text}`;
+            body.appendChild(div);
+            body.scrollTop = body.scrollHeight;
+        }
+
+        function clearLogs() {
+            document.getElementById('logBody').innerHTML = '';
+        }
+
+        function clearPackets() {
+            document.getElementById('packetTableBody').innerHTML = '';
+        }
+
+        function describePacket(head, subhead, isServerToClient) {
+            const h = head.toString(16).toUpperCase().padStart(2, '0');
+            const sub = subhead.toString(16).toUpperCase().padStart(2, '0');
+
+            if (isServerToClient) {
+                if (h === 'F1' && sub === '00') return 'Connect Result / Greeting';
+                if (h === 'F1' && sub === '01') return 'Login Result (Success)';
+                if (h === 'F3' && sub === '00') return 'Character List Data';
+                if (h === 'F3' && sub === '01') return 'Character Create Response';
+                if (h === 'F3' && sub === '03') return 'Character Stats & Spawn';
+                if (h === 'D4') return 'Object Move Notification';
+                if (h === '11') return 'Attack Damage & Animation';
+                if (h === '26') return 'Shop Item List';
+                if (h === '00') return 'Chat / Announcement';
+                return `Server Msg (0x${h}:0x${sub})`;
+            } else {
+                if (h === 'F1' && sub === '01') return 'Client Account Login';
+                if (h === 'F3' && sub === '00') return 'Request Character List';
+                if (h === 'F3' && sub === '01') return 'Request Create Character';
+                if (h === 'F3' && sub === '03') return 'Select Character & Enter Map';
+                if (h === 'D4') return 'Client Walk / Movement';
+                if (h === '11') return 'Client Attack Target';
+                return `Client Msg (0x${h}:0x${sub})`;
+            }
+        }
+
+        function addPacketRow(dir, bytes) {
+            const tbody = document.getElementById('packetTableBody');
+            const now = new Date().toTimeString().split(' ')[0];
+            const isServer = (dir === 'RX'); // From server to client
+
+            if (isServer) rxCount++; else txCount++;
+            document.getElementById('packetRatio').textContent = `${txCount} / ${rxCount}`;
+
+            const head = bytes[0] === 0xC1 || bytes[0] === 0xC3 ? bytes[2] : bytes[3];
+            const subhead = bytes[0] === 0xC1 || bytes[0] === 0xC3 ? bytes[3] : bytes[4];
+            const hex = bytes.map(b => b.toString(16).padStart(2, '0').toUpperCase()).join(' ');
+
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td>${now}</td>
+                <td><span class="badge-dir ${isServer ? 'badge-out' : 'badge-in'}">${dir}</span></td>
+                <td>0x${head.toString(16).toUpperCase().padStart(2, '0')}</td>
+                <td>0x${subhead.toString(16).toUpperCase().padStart(2, '0')}</td>
+                <td>${bytes.length} B</td>
+                <td style="color: #f1f5f9; font-weight: 500;">${describePacket(head, subhead, isServer)}</td>
+                <td class="raw-hex">${hex.substring(0, 60)}${hex.length > 60 ? '...' : ''}</td>
+            `;
+
+            tbody.insertBefore(tr, tbody.firstChild);
+            if (tbody.children.length > 100) tbody.removeChild(tbody.lastChild);
+        }
+
+        function init() {
+            appendLog('Spawning Server Web Worker...', '#60a5fa');
+            worker = new Worker('server_worker.js');
+
+            worker.onmessage = function (e) {
+                const { type, message, color, monsters, players, data } = e.data;
+
+                if (type === 'LOG') {
+                    appendLog(message, color);
+                } else if (type === 'SERVER_READY') {
+                    document.getElementById('statusDot').classList.add('active');
+                    document.getElementById('statusText').textContent = 'Solo Server Running';
+                    document.getElementById('monsterCount').textContent = monsters.toLocaleString();
+                    document.getElementById('playerCount').textContent = players;
+                    document.getElementById('btnConnect').disabled = false;
+                    appendLog('GameServer WebAssembly successfully initialized and ticking!', '#34d399');
+                } else if (type === 'PACKET_FROM_SERVER') {
+                    addPacketRow('RX', data);
+                } else if (type === 'PLAYER_CONNECTED') {
+                    activePlayerIndex = e.data.playerIndex;
+                    document.getElementById('playerCount').textContent = players;
+                    document.getElementById('btnLogin').disabled = false;
+                    appendLog(`Player session established. Player Index: ${activePlayerIndex}`, '#34d399');
+                } else if (type === 'ERROR') {
+                    appendLog(`Server Error: ${message}`, '#ef4444');
+                }
+            };
+
+            worker.postMessage({ action: 'INIT' });
+        }
+
+        function sendClientPacket(bytes) {
+            addPacketRow('TX', Array.from(bytes));
+            worker.postMessage({
+                action: 'SEND_PACKET',
+                payload: { bytes: Array.from(bytes) }
+            });
+        }
+
+        function connectPlayer() {
+            appendLog('Establishing local in-memory player session...', '#f59e0b');
+            worker.postMessage({ action: 'CONNECT_PLAYER', payload: { ip: '127.0.0.1' } });
+            document.getElementById('btnConnect').disabled = true;
+        }
+
+        function loginAccount() {
+            appendLog('Client sending login packet (Account: solo, Password: solo)...', '#60a5fa');
+            const packet = new Uint8Array(36);
+            packet[0] = 0xC1;
+            packet[1] = 36;
+            packet[2] = 0xF1;
+            packet[3] = 0x01;
+            const acc = "solo";
+            for (let i = 0; i < acc.length; i++) packet[4 + i] = acc.charCodeAt(i);
+            const pass = "solo";
+            for (let i = 0; i < pass.length; i++) packet[14 + i] = pass.charCodeAt(i);
+
+            sendClientPacket(packet);
+            document.getElementById('btnCharList').disabled = false;
+            document.getElementById('btnLogin').disabled = true;
+        }
+
+        function requestCharList() {
+            appendLog('Client requesting character list (C1 04 F3 00)...', '#60a5fa');
+            const packet = new Uint8Array([0xC1, 0x04, 0xF3, 0x00]);
+            sendClientPacket(packet);
+            document.getElementById('btnCreateChar').disabled = false;
+            document.getElementById('btnSelectChar').disabled = false;
+        }
+
+        function createDarkKnight() {
+            appendLog('Client creating Dark Knight named "HeroDK"...', '#f59e0b');
+            const packet = new Uint8Array(14);
+            packet[0] = 0xC1;
+            packet[1] = 14;
+            packet[2] = 0xF3;
+            packet[3] = 0x01;
+            const name = "HeroDK";
+            for (let i = 0; i < name.length; i++) packet[4 + i] = name.charCodeAt(i);
+            packet[13] = 1; // Class 1 = Dark Knight
+
+            sendClientPacket(packet);
+        }
+
+        function selectCharacter() {
+            appendLog('Selecting Character "HeroDK" to enter Lorencia world...', '#a78bfa');
+            const packet = new Uint8Array(14);
+            packet[0] = 0xC1;
+            packet[1] = 14;
+            packet[2] = 0xF3;
+            packet[3] = 0x03;
+            const name = "HeroDK";
+            for (let i = 0; i < name.length; i++) packet[4 + i] = name.charCodeAt(i);
+
+            sendClientPacket(packet);
+            document.getElementById('btnWalk').disabled = false;
+            document.getElementById('btnAttack').disabled = false;
+        }
+
+        function sendWalk() {
+            appendLog('Player walking towards coordinates (126, 126)...', '#60a5fa');
+            // C1 08 D4 (Move packet)
+            const packet = new Uint8Array([0xC1, 0x08, 0xD4, 125, 125, 0x11, 126, 126]);
+            sendClientPacket(packet);
+        }
+
+        function sendAttack() {
+            appendLog('Player attacking nearest monster (Target ID: 0)...', '#ef4444');
+            // C1 07 11 (Attack packet)
+            const packet = new Uint8Array([0xC1, 0x07, 0x11, 0x00, 0x00, 0x00, 0x00]);
+            sendClientPacket(packet);
+        }
+
+        window.addEventListener('load', init);
+    </script>
+</body>
+</html>

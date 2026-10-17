@@ -1,0 +1,7 @@
+//==============================================================
+// SHOP
+//==============================================================
+//SLOTS X = 0~7 , Y = 0~14 , * = Orden original
+//Index	Level	Dur	Skill	Luck	Option	ExcOp	SlotX	SlotY	Comment
+14 9 0 -1 0 0 0 0 0 0 // Ale
+end

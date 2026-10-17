@@ -1,0 +1,177 @@
+/* General Body Styles */
+body {
+  background-image: url(../images/background.jpg);
+  background-repeat: no-repeat;
+  background-size: cover;
+  background-attachment: fixed;
+}
+
+/* Apply blur only to header background */
+header {
+  background-color: rgba(129, 129, 129, 0.1);
+  border-bottom: 1px solid #5c5c5c;
+  backdrop-filter: blur(5px);
+  position: relative;
+  z-index: 1;
+}
+
+/* Top Navbar */
+.top-navbar {
+  background-color: #0e1420;
+  position: relative;
+  z-index: 2;
+  border-bottom: 1px solid #5c5c5c;
+}
+
+/* Nav and for Top Navbar Text */
+nav .nav-link,
+nav .dropdown-item {
+  color: #ffffff !important;
+}
+
+nav .nav-link:hover,
+nav .dropdown-item:hover {
+  color: #ffffff;
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+/* User Avatar Dropdown */
+nav .dropdown-menu {
+  background-color: #0e1420;
+  color: #ffffff;
+  border: none;
+}
+
+nav .dropdown-menu .dropdown-divider {
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+/* Make navbar-toggler (hamburger) white for dark background */
+.navbar-toggler {
+  filter: invert(100%);
+}
+
+/* Make navbar links with uppercase text */
+.navbar .nav-link {
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  font-weight: 500;
+  transition: color 0.2s ease;
+  color: #e3e3e3;
+}
+
+.navbar .nav-link:hover {
+  color: #ffffff;
+  background-color: rgba(255, 255, 255, 0.05);
+  border-radius: 5px;
+}
+
+/* Dropdown Menu */
+.dropdown-menu {
+  background-color: rgba(0, 0, 0, 0.8);
+  color: #e1e1e1;
+  backdrop-filter: none;
+  position: absolute;
+  z-index: 1050;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+}
+
+/* Dropdown Toggle */
+.dropdown-toggle {
+  backdrop-filter: none;
+}
+
+/* Make sure the dropdown items are visible */
+.dropdown-item {
+  color: #e1e1e1;
+}
+
+.dropdown-item:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+}
+
+/* Footer */
+footer {
+  padding: 20px;
+  background-color: #0d1321e3;
+  color: #e3e3e3;
+  text-align: center;
+}
+
+footer a {
+  color: #e3e3e3;
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+footer a:hover {
+  color: #ffffff;
+  text-decoration: underline;
+}
+
+.class-icon {
+  width: 24px;
+  height: 24px;
+  display: inline-block;
+  vertical-align: middle;
+  border-radius: 4px;
+}
+
+.news-content img {
+  max-width: 100%;
+  height: auto;
+  display: block;
+  margin: 0.75rem auto;
+}
+
+.news-content .center {
+  text-align: center;
+}
+
+.news-content .img-center {
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.news-body {
+  display: block;
+}
+
+.news-body--thumb {
+  display: grid;
+  grid-template-columns: minmax(120px, 180px) 1fr;
+  gap: 16px;
+  align-items: center;
+}
+
+.news-thumb img,
+.news-banner img {
+  width: 100%;
+  height: auto;
+  display: block;
+  border-radius: 10px;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.news-banner img {
+  max-height: 320px;
+  object-fit: contain;
+  background-color: #0e1420;
+}
+
+@media (max-width: 768px) {
+  .news-body--thumb {
+    grid-template-columns: 1fr;
+  }
+}
+
+.language-picker { display: flex; align-items: center; gap: 4px; margin: 4px 10px; }
+.language-picker select, .language-picker button { font: inherit; font-size: 13px; padding: 5px 8px; border: 1px solid #75899a; border-radius: 4px; background: #f0f5fa; color: #20364b; }
+
+.language-picker { display:flex; gap:6px; }
+.language-flag { display:flex; align-items:center; gap:5px; padding:6px 8px; border:1px solid #8aa4b566; border-radius:6px; background:#132438; color:#fff!important; text-decoration:none; font:600 11px system-ui; }
+.language-flag img { border-radius:2px; }
+.language-flag:is(:hover,:focus-visible,.selected) { border-color:#8cdaff; box-shadow:0 0 0 1px #8cdaff; }
+.theme-daedalus-elf .language-flag { background:#eff8ff; color:#203e56!important; }

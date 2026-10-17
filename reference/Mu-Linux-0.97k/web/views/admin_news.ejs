@@ -1,0 +1,47 @@
+<%- include('partials/header') %>
+
+<section class="card">
+  <div class="row-between">
+    <h2><%= t("Noticias") %></h2>
+    <div class="admin-links">
+      <a class="button-link" href="/admin/accounts"><%= t("Cuentas") %></a>
+      <% if (editorEnabled) { %>
+        <a class="button-link" href="/admin/server-editor"><%= t("Editor servidor") %></a>
+      <% } %>
+      <a class="button-link" href="/admin/news/new"><%= t("Nueva noticia") %></a>
+      <a class="button-link" href="/admin/downloads"><%= t("Descargas") %></a>
+      <a class="button-link" href="/admin/logout"><%= t("Salir") %></a>
+    </div>
+  </div>
+  <% if (news.length === 0) { %>
+    <p class="muted"><%= t("No hay noticias.") %></p>
+  <% } else { %>
+    <table class="table">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th><%= t("Titulo") %></th>
+          <th><%= t("Estado") %></th>
+          <th><%= t("Acciones") %></th>
+        </tr>
+      </thead>
+      <tbody>
+        <% news.forEach(item => { %>
+          <tr>
+            <td><%= item.id %></td>
+            <td><%= item.title %></td>
+            <td><%= t(item.published ? 'Publicado' : 'Oculto') %></td>
+            <td class="actions">
+              <a href="/admin/news/<%= item.id %>/edit"><%= t("Editar") %></a>
+              <form method="post" action="/admin/news/<%= item.id %>/delete">
+                <button type="submit" class="link-button"><%= t("Eliminar") %></button>
+              </form>
+            </td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  <% } %>
+</section>
+
+<%- include('partials/footer') %>

@@ -1,0 +1,19 @@
+<%- include('partials/header') %>
+
+<section class="card narrow">
+  <h2>Admin</h2>
+  <% if (error) { %>
+    <div class="alert"><%= t(error) %></div>
+  <% } %>
+  <form method="post" action="/admin/login">
+    <label><%= t("Usuario") %></label>
+    <input type="text" name="username" required />
+
+    <label><%= t("Contraseña") %></label>
+    <input type="password" name="password" required />
+
+    <button type="submit"><%= t("Entrar") %></button>
+  </form>
+</section>
+
+<%- include('partials/footer') %>

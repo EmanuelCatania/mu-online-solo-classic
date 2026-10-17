@@ -1,0 +1,18 @@
+<%- include('partials/site_head', { pageTitle, page }) %>
+
+<main class="flex-grow-1">
+  <div class="container my-5">
+    <div class="p-4 bg-light shadow-lg">
+      <div class="bg-white border p-4 shadow-sm">
+        <% if (!item.hide_title) { %>
+          <h2 class="fw-bold mb-3 text-dark"><%= item.title %></h2>
+        <% } %>
+        <p class="text-muted mb-4"><%= new Date(item.created_at).toLocaleDateString(locale) %></p>
+        <div class="text-muted mb-4 news-content"><%- item.body %></div>
+        <a href="/news" class="btn btn-outline-secondary"><%= t("Volver") %></a>
+      </div>
+    </div>
+  </div>
+</main>
+
+<%- include('partials/site_footer') %>

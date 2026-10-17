@@ -1,0 +1,29 @@
+{
+  "_comment": "MU Linux 0.97k Pterodactyl egg. Import in a PTDL_v2 Panel.",
+  "meta": { "version": "PTDL_v2", "update_url": "https://github.com/EmanuelCatania/Mu-Linux-0.97k" },
+  "exported_at": "2026-09-24T00:00:00+00:00",
+  "name": "MU Linux 0.97k Server",
+  "author": "support@mu-linux.com",
+  "description": "MU Online 0.97k services. The installer downloads the selected release into the server volume; the runtime image contains only dependencies and the Pterodactyl entrypoint.",
+  "features": null,
+  "docker_images": { "MU Linux runtime 0.2.0 (AMD64 + ARM64)": "emapupi/mu-linux-97k-pterodactyl:0.2.0" },
+  "file_denylist": [],
+  "startup": "./start.sh",
+  "config": { "files": "{}", "startup": "{\"done\":\"GameServer started\"}", "logs": "{}", "stop": "^C" },
+  "scripts": {
+    "installation": {
+      "script": "#!/bin/bash\nset -euo pipefail\nARCH=$(uname -m)\ncase \"${ARCH}\" in\n  x86_64) ASSET_ARCH=amd64 ;;\n  aarch64|arm64) ASSET_ARCH=arm64 ;;\n  *) echo \"Unsupported architecture: ${ARCH}\" >&2; exit 1 ;;\nesac\nREPOSITORY=EmanuelCatania/Mu-Linux-0.97k\nASSET=mu-linux-97k-server-${ASSET_ARCH}.tar.gz\nURL=https://github.com/${REPOSITORY}/releases/download/${MU_RELEASE_TAG}/${ASSET}\nmkdir -p /mnt/server\necho \"Downloading ${ASSET} from ${MU_RELEASE_TAG}...\"\ncurl --fail --location --retry 3 \"${URL}\" -o /tmp/mu-server.tar.gz\ntar -xzf /tmp/mu-server.tar.gz -C /mnt/server\nrm /tmp/mu-server.tar.gz\nchmod +x /mnt/server/start.sh /mnt/server/ConnectServer/ConnectServer /mnt/server/JoinServer/JoinServer /mnt/server/DataServer/DataServer /mnt/server/GameServer/GameServer\necho \"MU Linux 0.97k server installed.\"\n",
+      "container": "ghcr.io/ptero-eggs/installers:debian",
+      "entrypoint": "bash"
+    }
+  },
+  "variables": [
+    { "name": "Release tag", "description": "GitHub release to install. Reinstall after changing it.", "env_variable": "MU_RELEASE_TAG", "default_value": "0.97.20", "user_viewable": true, "user_editable": true, "rules": "required|string|regex:/^v?[0-9]+\\.[0-9]+\\.[0-9]+$/" },
+    { "name": "Database host", "description": "MySQL hostname or IP address.", "env_variable": "DB_HOST", "default_value": "{{server.build.default.database.host}}", "user_viewable": true, "user_editable": false, "rules": "required|string" },
+    { "name": "Database port", "description": "MySQL port.", "env_variable": "DB_PORT", "default_value": "{{server.build.default.database.port}}", "user_viewable": true, "user_editable": false, "rules": "required|string" },
+    { "name": "Database user", "description": "MySQL user.", "env_variable": "DB_USER", "default_value": "{{server.build.default.database.username}}", "user_viewable": true, "user_editable": false, "rules": "required|string" },
+    { "name": "Database password", "description": "MySQL password.", "env_variable": "DB_PASS", "default_value": "{{server.build.default.database.password}}", "user_viewable": true, "user_editable": false, "rules": "required|string" },
+    { "name": "Database name", "description": "MySQL database name.", "env_variable": "DB_NAME", "default_value": "{{server.build.default.database.database}}", "user_viewable": true, "user_editable": false, "rules": "required|string" },
+    { "name": "Public server address", "description": "Public IPv4 address or hostname advertised to MU clients.", "env_variable": "PUBLIC_IP", "default_value": "127.0.0.1", "user_viewable": true, "user_editable": true, "rules": "required|string|max:255" }
+  ]
+}

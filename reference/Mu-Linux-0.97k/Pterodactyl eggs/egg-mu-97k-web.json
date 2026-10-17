@@ -1,0 +1,33 @@
+{
+  "_comment": "MU Linux 0.97k Web Pterodactyl egg. Import in a PTDL_v2 Panel.",
+  "meta": { "version": "PTDL_v2", "update_url": "https://github.com/EmanuelCatania/Mu-Linux-0.97k" },
+  "exported_at": "2026-09-24T00:00:00+00:00",
+  "name": "MU Linux 0.97k Web",
+  "author": "support@mu-linux.com",
+  "description": "MU Linux web panel. The installer downloads web files into the server volume and installs production Node.js dependencies there.",
+  "features": null,
+  "docker_images": { "Node.js 20 (AMD64 + ARM64)": "ghcr.io/ptero-eggs/yolks:nodejs_20" },
+  "file_denylist": [],
+  "startup": "npm start",
+  "config": { "files": "{}", "startup": "{\"done\":\"listening\"}", "logs": "{}", "stop": "^C" },
+  "scripts": {
+    "installation": {
+      "script": "#!/bin/bash\nset -euo pipefail\nREPOSITORY=EmanuelCatania/Mu-Linux-0.97k\nASSET=mu-linux-97k-web.tar.gz\nURL=https://github.com/${REPOSITORY}/releases/download/${MU_RELEASE_TAG}/${ASSET}\napt-get update\napt-get install -y --no-install-recommends ca-certificates curl nodejs npm\nmkdir -p /mnt/server\necho \"Downloading ${ASSET} from ${MU_RELEASE_TAG}...\"\ncurl --fail --location --retry 3 \"${URL}\" -o /tmp/mu-web.tar.gz\ntar -xzf /tmp/mu-web.tar.gz -C /mnt/server\nrm /tmp/mu-web.tar.gz\ncd /mnt/server\nnpm ci --omit=dev\necho \"MU Linux 0.97k web panel installed.\"\n",
+      "container": "ghcr.io/ptero-eggs/installers:debian",
+      "entrypoint": "bash"
+    }
+  },
+  "variables": [
+    { "name": "Release tag", "description": "GitHub release to install. Reinstall after changing it.", "env_variable": "MU_RELEASE_TAG", "default_value": "v0.2.0", "user_viewable": true, "user_editable": true, "rules": "required|string|regex:/^v[0-9]+\\.[0-9]+\\.[0-9]+$/" },
+    { "name": "Database host", "description": "MySQL hostname or IP address.", "env_variable": "DB_HOST", "default_value": "{{server.build.default.database.host}}", "user_viewable": true, "user_editable": false, "rules": "required|string" },
+    { "name": "Database port", "description": "MySQL port.", "env_variable": "DB_PORT", "default_value": "{{server.build.default.database.port}}", "user_viewable": true, "user_editable": false, "rules": "required|string" },
+    { "name": "Database user", "description": "MySQL user.", "env_variable": "DB_USER", "default_value": "{{server.build.default.database.username}}", "user_viewable": true, "user_editable": false, "rules": "required|string" },
+    { "name": "Database password", "description": "MySQL password.", "env_variable": "DB_PASS", "default_value": "{{server.build.default.database.password}}", "user_viewable": true, "user_editable": false, "rules": "required|string" },
+    { "name": "Database name", "description": "MySQL database name.", "env_variable": "DB_NAME", "default_value": "{{server.build.default.database.database}}", "user_viewable": true, "user_editable": false, "rules": "required|string" },
+    { "name": "Web port", "description": "Managed from the primary Pterodactyl allocation.", "env_variable": "WEB_PORT", "default_value": "{{server.build.default.port}}", "user_viewable": true, "user_editable": false, "rules": "required|string" },
+    { "name": "Session secret", "description": "Use a unique secret with at least 32 characters.", "env_variable": "SESSION_SECRET", "default_value": "replace-this-with-a-long-random-session-secret", "user_viewable": true, "user_editable": true, "rules": "required|string|min:32" },
+    { "name": "Admin user", "description": "Initial administrator username.", "env_variable": "ADMIN_USER", "default_value": "admin", "user_viewable": true, "user_editable": true, "rules": "required|string|max:64" },
+    { "name": "Admin password", "description": "Initial administrator password. The application requires changing it after first sign-in.", "env_variable": "ADMIN_PASS", "default_value": "change-me-before-first-start", "user_viewable": true, "user_editable": true, "rules": "required|string|min:10" },
+    { "name": "Trust proxy", "description": "Enable when the panel is behind a reverse proxy.", "env_variable": "TRUST_PROXY", "default_value": "1", "user_viewable": true, "user_editable": true, "rules": "required|in:0,1" }
+  ]
+}

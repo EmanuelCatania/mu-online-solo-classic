@@ -1,0 +1,145 @@
+<%- include('partials/header') %>
+
+<section class="card">
+  <div class="row-between">
+    <h2><%= t("Editar cuenta") %></h2>
+    <div class="admin-links">
+      <a class="button-link" href="/admin/accounts"><%= t("Cuentas") %></a>
+      <% if (editorEnabled) { %>
+        <a class="button-link" href="/admin/server-editor"><%= t("Editor servidor") %></a>
+      <% } %>
+      <a class="button-link" href="/admin/downloads"><%= t("Descargas") %></a>
+      <a class="button-link" href="/admin/news"><%= t("Noticias") %></a>
+      <a class="button-link" href="/admin/logout"><%= t("Salir") %></a>
+    </div>
+  </div>
+
+  <% if (notice) { %>
+    <div class="alert success"><%= notice.text %></div>
+  <% } %>
+  <% if (error) { %>
+    <div class="alert"><%= error.text %></div>
+  <% } %>
+
+  <div class="card" style="margin-top:12px">
+    <h3><%= t("Estado") %></h3>
+    <% if (stat) { %>
+      <ul class="list">
+        <li><span>Online</span><span><%= stat.ConnectStat === 1 ? 'Si' : 'No' %></span></li>
+        <li><span>Server</span><span><%= stat.ServerName || '-' %></span></li>
+        <li><span>IP</span><span><%= stat.IP || '-' %></span></li>
+        <li><span><%= t("Conecto") %></span><span><%= stat.ConnectLocal || '-' %></span></li>
+        <li><span><%= t("Desconecto") %></span><span><%= stat.DisconnectLocal || '-' %></span></li>
+      </ul>
+    <% } else { %>
+      <p class="muted"><%= t("Sin datos de conexion.") %></p>
+    <% } %>
+  </div>
+
+  <form method="post" action="/admin/accounts/<%= account.memb___id %>">
+    <label><%= t("Usuario") %></label>
+    <input type="text" value="<%= account.memb___id %>" readonly />
+
+    <label><%= t("Nombre") %></label>
+    <input type="text" name="name" value="<%= account.memb_name %>" required maxlength="10" />
+
+    <label>Email</label>
+    <input type="email" name="email" value="<%= account.mail_addr || '' %>" maxlength="50" />
+
+    <label><%= t("Codigo (18 numeros)") %></label>
+    <input type="text" name="code" value="<%= account.sno__numb %>" required maxlength="18" />
+
+    <label><%= t("Account Level") %></label>
+    <select name="account_level">
+      <option value="0" <%= Number(account.AccountLevel) === 0 ? 'selected' : '' %>><%= t("0 - Cuenta normal") %></option>
+      <option value="1" <%= Number(account.AccountLevel) === 1 ? 'selected' : '' %>>1 - VIP 1</option>
+      <option value="2" <%= Number(account.AccountLevel) === 2 ? 'selected' : '' %>>2 - VIP 2</option>
+      <option value="3" <%= Number(account.AccountLevel) === 3 ? 'selected' : '' %>>3 - VIP 3</option>
+    </select>
+
+    <label><%= t("Expira") %></label>
+    <input type="datetime-local" name="account_expire" value="<%= account.AccountExpireLocal %>" />
+
+    <label class="checkbox">
+      <input type="checkbox" name="blocked" value="1" <%= account.blocked ? 'checked' : '' %> />
+      <%= t("Bloqueado") %>
+    </label>
+
+    <label><%= t("Expira bloqueo") %></label>
+    <input type="datetime-local" name="block_expire" value="<%= account.BlocExpireLocal %>" />
+
+    <label><%= t("Nueva contraseña (opcional)") %></label>
+    <input type="password" name="password" maxlength="10" />
+
+    <label><%= t("Confirmar nueva contraseña") %></label>
+    <input type="password" name="confirm" maxlength="10" />
+
+    <div class="row-between">
+      <button type="submit"><%= t("Guardar") %></button>
+      <a class="button-link" href="/admin/accounts"><%= t("Volver") %></a>
+    </div>
+  </form>
+
+  <div class="card" style="margin-top:18px">
+    <div class="row-between">
+      <h3><%= t("Personajes") %></h3>
+      <div class="admin-links">
+        <a class="button-link" href="/admin/accounts/<%= account.memb___id %>/warehouse"><%= t("Editar baul") %></a>
+      </div>
+    </div>
+    <% if (!characters || characters.length === 0) { %>
+      <p class="muted"><%= t("Sin personajes.") %></p>
+    <% } else { %>
+      <table class="table">
+        <thead>
+          <tr>
+            <th><%= t("Nombre") %></th>
+            <th><%= t("Nivel") %></th>
+            <th>Resets</th>
+            <th>Grand</th>
+            <th><%= t("Clase") %></th>
+            <th><%= t("Mapa") %></th>
+            <th><%= t("Acciones") %></th>
+          </tr>
+        </thead>
+        <tbody>
+          <% characters.forEach(char => { %>
+            <tr>
+              <td><%= char.Name %></td>
+              <td><%= char.cLevel %></td>
+              <td><%= char.ResetCount %></td>
+              <td><%= char.GrandResetCount %></td>
+              <td><%= char.ClassName %></td>
+              <td><%= char.MapName %></td>
+            <td class="actions">
+              <a href="/admin/accounts/<%= account.memb___id %>/characters/<%= encodeURIComponent(char.Name) %>"><%= t("Editar") %></a>
+              <a href="/admin/accounts/<%= account.memb___id %>/characters/<%= encodeURIComponent(char.Name) %>/inventory"><%= t("Inventario") %></a>
+            </td>
+          </tr>
+        <% }) %>
+      </tbody>
+      </table>
+    <% } %>
+  </div>
+
+  <div class="card" style="margin-top:18px">
+    <div class="row-between">
+      <h3><%= t("Baul") %></h3>
+      <div class="admin-links">
+        <a class="button-link" href="/admin/accounts/<%= account.memb___id %>/warehouse"><%= t("Editar") %></a>
+        <a class="button-link" href="/admin/accounts/<%= account.memb___id %>/warehouse/editor"><%= t("Editor grafico") %></a>
+      </div>
+    </div>
+    <% if (warehouse) { %>
+      <ul class="list">
+        <li><span>Zen</span><span><%= warehouse.Money %></span></li>
+        <li><span><%= t("Password") %></span><span><%= warehouse.pw %></span></li>
+        <li><span>Items (bytes)</span><span><%= warehouse.itemsBytes %></span></li>
+      </ul>
+    <% } else { %>
+      <p class="muted"><%= t("No hay baul creado para esta cuenta.") %></p>
+    <% } %>
+  </div>
+</section>
+
+<%- include('partials/footer') %>

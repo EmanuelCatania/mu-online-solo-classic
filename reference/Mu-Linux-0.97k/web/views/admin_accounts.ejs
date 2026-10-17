@@ -1,0 +1,64 @@
+<%- include('partials/header') %>
+
+<section class="card">
+  <div class="row-between">
+    <h2><%= t("Cuentas") %></h2>
+    <div class="admin-links">
+      <a class="button-link" href="/admin/accounts/new"><%= t("Nueva cuenta") %></a>
+      <% if (editorEnabled) { %>
+        <a class="button-link" href="/admin/server-editor"><%= t("Editor servidor") %></a>
+      <% } %>
+      <a class="button-link" href="/admin/downloads"><%= t("Descargas") %></a>
+      <a class="button-link" href="/admin/news"><%= t("Noticias") %></a>
+      <a class="button-link" href="/admin/logout"><%= t("Salir") %></a>
+    </div>
+  </div>
+
+  <% if (notice) { %>
+    <div class="alert success"><%= notice.text %></div>
+  <% } %>
+  <% if (error) { %>
+    <div class="alert"><%= error.text %></div>
+  <% } %>
+
+  <form method="get" action="/admin/accounts">
+    <label><%= t("Buscar (usuario, nombre o email)") %></label>
+    <input type="text" name="q" value="<%= q %>" maxlength="50" />
+    <button type="submit"><%= t("Buscar") %></button>
+  </form>
+
+  <% if (accounts.length === 0) { %>
+    <p class="muted"><%= t("No hay cuentas para mostrar.") %></p>
+  <% } else { %>
+    <table class="table">
+      <thead>
+        <tr>
+          <th><%= t("Usuario") %></th>
+          <th><%= t("Nombre") %></th>
+          <th>Email</th>
+          <th><%= t("Nivel") %></th>
+          <th><%= t("Estado") %></th>
+          <th>Online</th>
+          <th><%= t("Acciones") %></th>
+        </tr>
+      </thead>
+      <tbody>
+        <% accounts.forEach(item => { %>
+          <tr>
+            <td><%= item.memb___id %></td>
+            <td><%= item.memb_name %></td>
+            <td><%= item.mail_addr || '-' %></td>
+            <td><%= item.AccountLevel %></td>
+            <td><%= t(String(item.bloc_code) === '1' ? 'Bloqueado' : 'OK') %></td>
+            <td><%= item.ConnectStat === 1 ? 'Online' : 'Offline' %></td>
+            <td class="actions">
+              <a href="/admin/accounts/<%= item.memb___id %>"><%= t("Editar") %></a>
+            </td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  <% } %>
+</section>
+
+<%- include('partials/footer') %>
