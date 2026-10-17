@@ -17,6 +17,12 @@
 namespace fs = std::filesystem;
 
 static std::string g_SaveDirectory = "./saves";
+static SoloSaveEventCallback g_SoloSaveEventCallback = nullptr;
+
+void SoloDataServer_SetSaveEventCallback(SoloSaveEventCallback callback)
+{
+	g_SoloSaveEventCallback = callback;
+}
 
 struct SOLO_SAVED_CHARACTER_HEADER
 {
@@ -269,6 +275,7 @@ void SoloDataServer_ProcessPacket(BYTE* lpMsg, int size)
 
 						result = 1; // Success
 						LogAdd(LOG_GREEN, "[SoloDataServer] Character created: %s, class %d, slot %d", lpSend->name, lpSend->Class, slot);
+						if (g_SoloSaveEventCallback) g_SoloSaveEventCallback();
 					}
 
 					SDHP_CHARACTER_CREATE_RECV pMsg;
@@ -313,6 +320,7 @@ void SoloDataServer_ProcessPacket(BYTE* lpMsg, int size)
 						std::error_code ec;
 						fs::remove(GetCharacterFilePath(lpSend->name), ec);
 						LogAdd(LOG_BLUE, "[SoloDataServer] Character deleted: %s", lpSend->name);
+						if (g_SoloSaveEventCallback) g_SoloSaveEventCallback();
 					}
 
 					SDHP_CHARACTER_DELETE_RECV pMsg;
@@ -417,6 +425,7 @@ void SoloDataServer_ProcessPacket(BYTE* lpMsg, int size)
 							}
 						}
 						SaveAccountData(accData);
+						if (g_SoloSaveEventCallback) g_SoloSaveEventCallback();
 					}
 					break;
 				}
@@ -462,6 +471,7 @@ void SoloDataServer_ProcessPacket(BYTE* lpMsg, int size)
 					{
 						file.write(reinterpret_cast<const char*>(lpSave), sizeof(*lpSave));
 						LogAdd(LOG_BLUE, "[SoloDataServer] Warehouse saved for %s", lpSave->account);
+						if (g_SoloSaveEventCallback) g_SoloSaveEventCallback();
 					}
 					break;
 				}

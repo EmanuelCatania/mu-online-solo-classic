@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="uk">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -45,9 +45,9 @@
         }
 
         header {
-            padding: 1.25rem 2rem;
+            padding: 1.1rem 2rem;
             border-bottom: 1px solid var(--border-color);
-            background: rgba(17, 24, 39, 0.7);
+            background: rgba(17, 24, 39, 0.75);
             backdrop-filter: blur(12px);
             display: flex;
             justify-content: space-between;
@@ -55,6 +55,8 @@
             position: sticky;
             top: 0;
             z-index: 50;
+            flex-wrap: wrap;
+            gap: 1rem;
         }
 
         .brand {
@@ -65,7 +67,7 @@
 
         .brand h1 {
             font-family: 'Cinzel', serif;
-            font-size: 1.5rem;
+            font-size: 1.45rem;
             font-weight: 900;
             letter-spacing: 0.1em;
             background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 50%, #d97706 100%);
@@ -84,6 +86,24 @@
             border: 1px solid rgba(245, 158, 11, 0.3);
             text-transform: uppercase;
             letter-spacing: 0.05em;
+        }
+
+        .header-controls {
+            display: flex;
+            align-items: center;
+            gap: 1.25rem;
+        }
+
+        .save-indicator {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            background: var(--bg-elevated);
+            padding: 0.4rem 0.8rem;
+            border-radius: 6px;
+            border: 1px solid var(--border-color);
         }
 
         .server-status {
@@ -115,7 +135,7 @@
             margin: 0 auto;
             width: 100%;
             display: grid;
-            grid-template-columns: 360px 1fr;
+            grid-template-columns: 380px 1fr;
             gap: 1.75rem;
         }
 
@@ -160,7 +180,7 @@
 
         .stat-box {
             background: var(--bg-elevated);
-            padding: 1rem;
+            padding: 0.85rem 1rem;
             border-radius: 8px;
             border: 1px solid var(--border-color);
         }
@@ -173,7 +193,7 @@
 
         .stat-value {
             font-family: 'JetBrains Mono', monospace;
-            font-size: 1.35rem;
+            font-size: 1.3rem;
             font-weight: 700;
             color: #f8fafc;
         }
@@ -184,6 +204,12 @@
             gap: 0.75rem;
         }
 
+        .btn-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.5rem;
+        }
+
         .btn {
             appearance: none;
             border: none;
@@ -191,8 +217,8 @@
             cursor: pointer;
             font-family: inherit;
             font-weight: 600;
-            font-size: 0.875rem;
-            padding: 0.75rem 1.25rem;
+            font-size: 0.85rem;
+            padding: 0.7rem 1.1rem;
             border-radius: 8px;
             display: flex;
             align-items: center;
@@ -226,8 +252,32 @@
             transform: translateY(-1px);
         }
 
+        .btn-success {
+            background: rgba(16, 185, 129, 0.15);
+            color: #34d399;
+            border: 1px solid rgba(16, 185, 129, 0.35);
+        }
+
+        .btn-success:hover:not(:disabled) {
+            background: rgba(16, 185, 129, 0.25);
+            border-color: #34d399;
+            transform: translateY(-1px);
+        }
+
+        .btn-warning {
+            background: rgba(245, 158, 11, 0.15);
+            color: #fbbf24;
+            border: 1px solid rgba(245, 158, 11, 0.35);
+        }
+
+        .btn-warning:hover:not(:disabled) {
+            background: rgba(245, 158, 11, 0.25);
+            border-color: #fbbf24;
+            transform: translateY(-1px);
+        }
+
         .btn:disabled {
-            opacity: 0.5;
+            opacity: 0.45;
             cursor: not-allowed;
             transform: none !important;
         }
@@ -249,7 +299,7 @@
         }
 
         .panel-header {
-            padding: 1rem 1.5rem;
+            padding: 0.9rem 1.5rem;
             border-bottom: 1px solid var(--border-color);
             display: flex;
             justify-content: space-between;
@@ -346,6 +396,18 @@
             color: #cbd5e1;
             letter-spacing: 0.05em;
         }
+
+        .storage-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+            background: rgba(16, 185, 129, 0.1);
+            color: #34d399;
+            padding: 0.15rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
     </style>
 </head>
 <body>
@@ -355,92 +417,133 @@
             <h1>MU Online Solo</h1>
             <span class="version-badge">Classic 0.97k WASM</span>
         </div>
-        <div class="server-status">
-            <span class="status-dot" id="statusDot"></span>
-            <span id="statusText">Initializing Server...</span>
+
+        <div class="header-controls">
+            <!-- LocalStorage Status Pill -->
+            <div class="save-indicator">
+                <span class="storage-pill">LocalStorage</span>
+                <span id="saveStatus">Готово</span>
+            </div>
+
+            <!-- Server Status -->
+            <div class="server-status">
+                <span class="status-dot" id="statusDot"></span>
+                <span id="statusText">Ініціалізація сервера...</span>
+            </div>
         </div>
     </header>
 
     <main>
         <!-- Sidebar Controls -->
         <div class="sidebar">
+
+            <!-- Manual Save / Load Controls -->
+            <div class="card" style="border-color: var(--border-highlight);">
+                <div class="card-title">
+                    <span>Керування сейвами (Save / Load)</span>
+                    <span id="saveCountBadge" style="color: #fbbf24; font-size: 0.75rem;">0 файлів</span>
+                </div>
+                <div class="actions-group">
+                    <div class="btn-row">
+                        <button class="btn btn-success" id="btnManualSave" onclick="manualSave()">
+                            💾 Save (Сейв)
+                        </button>
+                        <button class="btn btn-warning" id="btnManualLoad" onclick="manualLoad()">
+                            📂 Load (Завантажити)
+                        </button>
+                    </div>
+                    <div class="btn-row">
+                        <button class="btn btn-secondary" onclick="exportSaveFile()" title="Завантажити файл збереження на комп'ютер">
+                            ⬇️ Експорт у файл
+                        </button>
+                        <button class="btn btn-secondary" onclick="triggerImportFileInput()" title="Завантажити файл сейву з комп'ютера">
+                            ⬆️ Імпорт з файлу
+                        </button>
+                    </div>
+                    <input type="file" id="importFileInput" accept=".json,.musav" style="display: none;" onchange="handleImportFile(event)">
+                </div>
+            </div>
+
+            <!-- Server Telemetry -->
             <div class="card">
                 <div class="card-title">
-                    <span>Server Metrics</span>
+                    <span>Метрики сервера</span>
                     <span id="tpsCounter" style="color: var(--accent-green); font-family: 'JetBrains Mono';">20 TPS</span>
                 </div>
                 <div class="stat-grid">
                     <div class="stat-box">
-                        <div class="stat-label">Monsters Spawned</div>
+                        <div class="stat-label">Монстри у світі</div>
                         <div class="stat-value" id="monsterCount">3,245</div>
                     </div>
                     <div class="stat-box">
-                        <div class="stat-label">Online Players</div>
+                        <div class="stat-label">Гравців онлайн</div>
                         <div class="stat-value" id="playerCount">0</div>
                     </div>
                     <div class="stat-box">
-                        <div class="stat-label">Packets RX / TX</div>
+                        <div class="stat-label">Пакети TX / RX</div>
                         <div class="stat-value" id="packetRatio">0 / 0</div>
                     </div>
                     <div class="stat-box">
-                        <div class="stat-label">Active Maps</div>
+                        <div class="stat-label">Активні карти</div>
                         <div class="stat-value">17</div>
                     </div>
                 </div>
             </div>
 
+            <!-- Player Handshake -->
             <div class="card">
-                <div class="card-title">Solo Player Handshake</div>
+                <div class="card-title">Тестовий хендшейк клієнта</div>
                 <div class="actions-group">
                     <button class="btn btn-primary" id="btnConnect" onclick="connectPlayer()">
-                        1. Connect Player Session
+                        1. Підключити гравця
                     </button>
                     <button class="btn btn-secondary" id="btnLogin" onclick="loginAccount()" disabled>
-                        2. Send Login (Account: solo)
+                        2. Авторизація (solo/solo)
                     </button>
                     <button class="btn btn-secondary" id="btnCharList" onclick="requestCharList()" disabled>
-                        3. Request Character List
+                        3. Список персонажів
                     </button>
                     <button class="btn btn-secondary" id="btnCreateChar" onclick="createDarkKnight()" disabled>
-                        4. Create Dark Knight (HeroDK)
+                        4. Створити Dark Knight (HeroDK)
                     </button>
                     <button class="btn btn-secondary" id="btnSelectChar" onclick="selectCharacter()" disabled>
-                        5. Enter Lorencia (Select HeroDK)
+                        5. Увійти в Lorencia (HeroDK)
                     </button>
                 </div>
             </div>
 
+            <!-- In-Game Movement & Combat -->
             <div class="card">
-                <div class="card-title">In-Game Actions</div>
+                <div class="card-title">Ігрові дії (Світ)</div>
                 <div class="actions-group">
                     <button class="btn btn-secondary" id="btnWalk" onclick="sendWalk()" disabled>
-                        Walk: (125, 125) &rarr; (126, 126)
+                        Рух: (125, 125) &rarr; (126, 126)
                     </button>
                     <button class="btn btn-secondary" id="btnAttack" onclick="sendAttack()" disabled>
-                        Attack Target (Spider / Bull)
+                        Атакувати монстра (ID: 0)
                     </button>
                 </div>
             </div>
         </div>
 
-        <!-- Main Inspection Area -->
+        <!-- Main Content Area -->
         <div class="content-area">
             <!-- Packet Live Inspector -->
             <div class="packet-stream">
                 <div class="panel-header">
                     <div style="font-weight: 600; font-size: 0.9rem;">Live In-Memory Packet Inspector</div>
-                    <button class="btn btn-secondary" style="padding: 0.35rem 0.75rem; font-size: 0.75rem;" onclick="clearPackets()">Clear</button>
+                    <button class="btn btn-secondary" style="padding: 0.35rem 0.75rem; font-size: 0.75rem;" onclick="clearPackets()">Очистити</button>
                 </div>
                 <div class="table-container">
                     <table>
                         <thead>
                             <tr>
-                                <th style="width: 90px;">Time</th>
-                                <th style="width: 70px;">Dir</th>
+                                <th style="width: 90px;">Час</th>
+                                <th style="width: 70px;">Напрям</th>
                                 <th style="width: 70px;">Head</th>
                                 <th style="width: 70px;">Sub</th>
-                                <th style="width: 80px;">Size</th>
-                                <th>Description</th>
+                                <th style="width: 80px;">Розмір</th>
+                                <th>Опис пакету</th>
                                 <th>Raw Hex</th>
                             </tr>
                         </thead>
@@ -455,7 +558,7 @@
             <div class="terminal">
                 <div class="panel-header">
                     <div style="font-weight: 600; font-size: 0.9rem;">GameServer Log Terminal</div>
-                    <button class="btn btn-secondary" style="padding: 0.35rem 0.75rem; font-size: 0.75rem;" onclick="clearLogs()">Clear</button>
+                    <button class="btn btn-secondary" style="padding: 0.35rem 0.75rem; font-size: 0.75rem;" onclick="clearLogs()">Очистити</button>
                 </div>
                 <div class="terminal-body" id="logBody">
                     <!-- Logs added dynamically -->
@@ -465,6 +568,7 @@
     </main>
 
     <script>
+        const STORAGE_KEY = 'mu_online_solo_saves_v1';
         let worker = null;
         let rxCount = 0;
         let txCount = 0;
@@ -489,16 +593,37 @@
             document.getElementById('packetTableBody').innerHTML = '';
         }
 
+        function updateSaveStatus(text, color = '#34d399') {
+            const el = document.getElementById('saveStatus');
+            el.textContent = text;
+            el.style.color = color;
+        }
+
+        function updateSaveCountBadge() {
+            try {
+                const raw = localStorage.getItem(STORAGE_KEY);
+                if (raw) {
+                    const parsed = JSON.parse(raw);
+                    const count = Object.keys(parsed).length;
+                    document.getElementById('saveCountBadge').textContent = `${count} файл(ів)`;
+                } else {
+                    document.getElementById('saveCountBadge').textContent = '0 файлів';
+                }
+            } catch (e) {
+                document.getElementById('saveCountBadge').textContent = 'Помилка';
+            }
+        }
+
         function describePacket(head, subhead, isServerToClient) {
             const h = head.toString(16).toUpperCase().padStart(2, '0');
             const sub = subhead.toString(16).toUpperCase().padStart(2, '0');
 
             if (isServerToClient) {
-                if (h === 'F1' && sub === '00') return 'Connect Result / Greeting';
+                if (h === 'F1' && sub === '00') return 'Connect Greeting (Server Ready)';
                 if (h === 'F1' && sub === '01') return 'Login Result (Success)';
                 if (h === 'F3' && sub === '00') return 'Character List Data';
                 if (h === 'F3' && sub === '01') return 'Character Create Response';
-                if (h === 'F3' && sub === '03') return 'Character Stats & Spawn';
+                if (h === 'F3' && sub === '03') return 'Character Stats & Map Spawn';
                 if (h === 'D4') return 'Object Move Notification';
                 if (h === '11') return 'Attack Damage & Animation';
                 if (h === '26') return 'Shop Item List';
@@ -518,7 +643,7 @@
         function addPacketRow(dir, bytes) {
             const tbody = document.getElementById('packetTableBody');
             const now = new Date().toTimeString().split(' ')[0];
-            const isServer = (dir === 'RX'); // From server to client
+            const isServer = (dir === 'RX');
 
             if (isServer) rxCount++; else txCount++;
             document.getElementById('packetRatio').textContent = `${txCount} / ${rxCount}`;
@@ -535,7 +660,7 @@
                 <td>0x${subhead.toString(16).toUpperCase().padStart(2, '0')}</td>
                 <td>${bytes.length} B</td>
                 <td style="color: #f1f5f9; font-weight: 500;">${describePacket(head, subhead, isServer)}</td>
-                <td class="raw-hex">${hex.substring(0, 60)}${hex.length > 60 ? '...' : ''}</td>
+                <td class="raw-hex">${hex.substring(0, 55)}${hex.length > 55 ? '...' : ''}</td>
             `;
 
             tbody.insertBefore(tr, tbody.firstChild);
@@ -543,11 +668,29 @@
         }
 
         function init() {
-            appendLog('Spawning Server Web Worker...', '#60a5fa');
+            appendLog('Завантаження сейвів з браузерного LocalStorage...', '#a78bfa');
+            let initialSaves = null;
+            try {
+                const stored = localStorage.getItem(STORAGE_KEY);
+                if (stored) {
+                    initialSaves = JSON.parse(stored);
+                    const count = Object.keys(initialSaves).length;
+                    appendLog(`Знайдено збереження у LocalStorage (${count} файлів)`, '#34d399');
+                    updateSaveStatus(`Завантажено (${count} файлів)`);
+                } else {
+                    appendLog('Збережень у LocalStorage ще немає (перший запуск)', '#94a3b8');
+                    updateSaveStatus('Нова гра');
+                }
+            } catch (err) {
+                appendLog(`Помилка читання LocalStorage: ${err.message}`, '#ef4444');
+            }
+            updateSaveCountBadge();
+
+            appendLog('Запуск WebAssembly Server Worker...', '#60a5fa');
             worker = new Worker('server_worker.js');
 
             worker.onmessage = function (e) {
-                const { type, message, color, monsters, players, data } = e.data;
+                const { type, message, color, monsters, players, data, saves, count } = e.data;
 
                 if (type === 'LOG') {
                     appendLog(message, color);
@@ -557,20 +700,149 @@
                     document.getElementById('monsterCount').textContent = monsters.toLocaleString();
                     document.getElementById('playerCount').textContent = players;
                     document.getElementById('btnConnect').disabled = false;
-                    appendLog('GameServer WebAssembly successfully initialized and ticking!', '#34d399');
+                    appendLog('GameServer WebAssembly успішно стартував (17 карт, 3,245 монстрів)', '#34d399');
                 } else if (type === 'PACKET_FROM_SERVER') {
                     addPacketRow('RX', data);
                 } else if (type === 'PLAYER_CONNECTED') {
                     activePlayerIndex = e.data.playerIndex;
                     document.getElementById('playerCount').textContent = players;
                     document.getElementById('btnLogin').disabled = false;
-                    appendLog(`Player session established. Player Index: ${activePlayerIndex}`, '#34d399');
+                    appendLog(`Сесія гравця створена. Індекс: ${activePlayerIndex}`, '#34d399');
+                } else if (type === 'AUTO_SAVE_DATA') {
+                    // Automatically persist to LocalStorage
+                    try {
+                        localStorage.setItem(STORAGE_KEY, JSON.stringify(saves));
+                        const fileCount = Object.keys(saves).length;
+                        updateSaveStatus(`Автосейв (${fileCount} ф.)`, '#34d399');
+                        updateSaveCountBadge();
+                        appendLog(`[AutoSave] Гра збережена у LocalStorage (${fileCount} файлів)`, '#34d399');
+                    } catch (err) {
+                        appendLog(`[AutoSave] Помилка запису в LocalStorage: ${err.message}`, '#ef4444');
+                    }
+                } else if (type === 'SAVES_EXPORTED') {
+                    if (window._isDownloadingExport) {
+                        window._isDownloadingExport = false;
+                        downloadSaveJson(saves);
+                    } else {
+                        // Manual Save to LocalStorage
+                        try {
+                            localStorage.setItem(STORAGE_KEY, JSON.stringify(saves));
+                            const fileCount = Object.keys(saves).length;
+                            updateSaveStatus(`Збережено (${fileCount} ф.)`, '#34d399');
+                            updateSaveCountBadge();
+                            appendLog(`[Manual Save] Сейв успішно оновлено у LocalStorage!`, '#34d399');
+                            const btn = document.getElementById('btnManualSave');
+                            if (btn) {
+                                const old = btn.textContent;
+                                btn.textContent = '✅ Збережено!';
+                                setTimeout(() => { btn.textContent = old; }, 1500);
+                            }
+                        } catch (err) {
+                            appendLog(`[Manual Save] Помилка: ${err.message}`, '#ef4444');
+                        }
+                    }
+                } else if (type === 'SAVES_IMPORTED') {
+                    updateSaveStatus(`Сейв відновлено (${count} ф.)`, '#34d399');
+                    updateSaveCountBadge();
+                    appendLog(`[Manual Load] Успішно відновлено ${count} файл(ів) у пам'ять сервера!`, '#34d399');
+                    const btn = document.getElementById('btnManualLoad');
+                    if (btn) {
+                        const old = btn.textContent;
+                        btn.textContent = '✅ Завантажено!';
+                        setTimeout(() => { btn.textContent = old; }, 1500);
+                    }
+                    // Automatically refresh character list
+                    requestCharList();
                 } else if (type === 'ERROR') {
                     appendLog(`Server Error: ${message}`, '#ef4444');
                 }
             };
 
-            worker.postMessage({ action: 'INIT' });
+            worker.postMessage({ action: 'INIT', payload: { saves: initialSaves } });
+
+            // Автоматичне фонове збереження стану гри у LocalStorage кожні 30 секунд
+            setInterval(() => {
+                if (worker) {
+                    worker.postMessage({ action: 'EXPORT_SAVES' });
+                }
+            }, 30000);
+
+            // Збереження перед виходом/закриттям сторінки
+            window.addEventListener('beforeunload', () => {
+                if (worker) {
+                    worker.postMessage({ action: 'EXPORT_SAVES' });
+                }
+            });
+        }
+
+        // Manual Save to LocalStorage
+        function manualSave() {
+            appendLog('[Save] Зберігаємо поточний стан гри у LocalStorage...', '#fbbf24');
+            window._isDownloadingExport = false;
+            worker.postMessage({ action: 'EXPORT_SAVES' });
+        }
+
+        // Manual Load from LocalStorage
+        function manualLoad() {
+            appendLog('[Load] Завантажуємо стан гри з LocalStorage...', '#fbbf24');
+            try {
+                const stored = localStorage.getItem(STORAGE_KEY);
+                if (!stored) {
+                    alert('Немає збережень у LocalStorage!');
+                    return;
+                }
+                const saves = JSON.parse(stored);
+                worker.postMessage({ action: 'IMPORT_SAVES', payload: { saves: saves } });
+            } catch (err) {
+                appendLog(`[Load] Помилка: ${err.message}`, '#ef4444');
+            }
+        }
+
+        // Export save file (.json) to disk
+        function exportSaveFile() {
+            appendLog('[Export] Експорт файлу збереження...', '#60a5fa');
+            window._isDownloadingExport = true;
+            worker.postMessage({ action: 'EXPORT_SAVES' });
+        }
+
+        function downloadSaveJson(saves) {
+            const jsonStr = JSON.stringify(saves, null, 2);
+            const blob = new Blob([jsonStr], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            const date = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-');
+            a.href = url;
+            a.download = `mu_solo_classic_save_${date}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            appendLog(`[Export] Файл збереження завантажено на комп'ютер!`, '#34d399');
+        }
+
+        // Import save file (.json) from disk
+        function triggerImportFileInput() {
+            document.getElementById('importFileInput').click();
+        }
+
+        function handleImportFile(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const saves = JSON.parse(e.target.result);
+                    // Also store into LocalStorage
+                    localStorage.setItem(STORAGE_KEY, JSON.stringify(saves));
+                    worker.postMessage({ action: 'IMPORT_SAVES', payload: { saves: saves } });
+                    appendLog(`[Import] Файл ${file.name} успішно імпортовано!`, '#34d399');
+                } catch (err) {
+                    alert(`Помилка відкриття файлу сейву: ${err.message}`);
+                }
+            };
+            reader.readAsText(file);
+            event.target.value = ''; // Reset input
         }
 
         function sendClientPacket(bytes) {
@@ -582,13 +854,13 @@
         }
 
         function connectPlayer() {
-            appendLog('Establishing local in-memory player session...', '#f59e0b');
+            appendLog('Створення локальної сесії гравця (In-Memory Socket)...', '#f59e0b');
             worker.postMessage({ action: 'CONNECT_PLAYER', payload: { ip: '127.0.0.1' } });
             document.getElementById('btnConnect').disabled = true;
         }
 
         function loginAccount() {
-            appendLog('Client sending login packet (Account: solo, Password: solo)...', '#60a5fa');
+            appendLog('Відправка пакету авторизації (Account: solo, Password: solo)...', '#60a5fa');
             const packet = new Uint8Array(36);
             packet[0] = 0xC1;
             packet[1] = 36;
@@ -605,7 +877,7 @@
         }
 
         function requestCharList() {
-            appendLog('Client requesting character list (C1 04 F3 00)...', '#60a5fa');
+            appendLog('Запит списку персонажів (C1 04 F3 00)...', '#60a5fa');
             const packet = new Uint8Array([0xC1, 0x04, 0xF3, 0x00]);
             sendClientPacket(packet);
             document.getElementById('btnCreateChar').disabled = false;
@@ -613,7 +885,7 @@
         }
 
         function createDarkKnight() {
-            appendLog('Client creating Dark Knight named "HeroDK"...', '#f59e0b');
+            appendLog('Створення персонажа Dark Knight "HeroDK"...', '#f59e0b');
             const packet = new Uint8Array(14);
             packet[0] = 0xC1;
             packet[1] = 14;
@@ -627,7 +899,7 @@
         }
 
         function selectCharacter() {
-            appendLog('Selecting Character "HeroDK" to enter Lorencia world...', '#a78bfa');
+            appendLog('Вибір персонажа "HeroDK" та вхід у світ Lorencia...', '#a78bfa');
             const packet = new Uint8Array(14);
             packet[0] = 0xC1;
             packet[1] = 14;
@@ -642,15 +914,13 @@
         }
 
         function sendWalk() {
-            appendLog('Player walking towards coordinates (126, 126)...', '#60a5fa');
-            // C1 08 D4 (Move packet)
+            appendLog('Гравець крокує до координат (126, 126)...', '#60a5fa');
             const packet = new Uint8Array([0xC1, 0x08, 0xD4, 125, 125, 0x11, 126, 126]);
             sendClientPacket(packet);
         }
 
         function sendAttack() {
-            appendLog('Player attacking nearest monster (Target ID: 0)...', '#ef4444');
-            // C1 07 11 (Attack packet)
+            appendLog('Гравець атакує монстра (ID: 0)...', '#ef4444');
             const packet = new Uint8Array([0xC1, 0x07, 0x11, 0x00, 0x00, 0x00, 0x00]);
             sendClientPacket(packet);
         }

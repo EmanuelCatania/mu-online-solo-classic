@@ -9,7 +9,56 @@ function log(msg, color = '#60a5fa') {
     self.postMessage({ type: 'LOG', message: msg, color: color });
 }
 
-async function initServer() {
+function exportSaves() {
+    const saves = {};
+    if (!Module || !Module.FS) return saves;
+
+    try {
+        if (Module.FS.analyzePath('/saves').exists) {
+            const files = Module.FS.readdir('/saves').filter(f => f !== '.' && f !== '..');
+            for (const file of files) {
+                const data = Module.FS.readFile('/saves/' + file);
+                // Convert Uint8Array to binary string then base64
+                let binary = '';
+                const len = data.byteLength;
+                for (let i = 0; i < len; i++) {
+                    binary += String.fromCharCode(data[i]);
+                }
+                saves[file] = btoa(binary);
+            }
+        }
+    } catch (err) {
+        log(`[Worker] Error exporting saves: ${err.message}`, '#f87171');
+    }
+    return saves;
+}
+
+function importSaves(saves) {
+    if (!Module || !Module.FS || !saves) return 0;
+
+    let count = 0;
+    try {
+        if (!Module.FS.analyzePath('/saves').exists) {
+            Module.FS.mkdir('/saves');
+        }
+
+        for (const [file, b64] of Object.entries(saves)) {
+            const binary = atob(b64);
+            const bytes = new Uint8Array(binary.length);
+            for (let i = 0; i < binary.length; i++) {
+                bytes[i] = binary.charCodeAt(i);
+            }
+            Module.FS.writeFile('/saves/' + file, bytes);
+            count++;
+        }
+        log(`[Worker] Restored ${count} save file(s) into /saves`, '#34d399');
+    } catch (err) {
+        log(`[Worker] Error importing saves: ${err.message}`, '#f87171');
+    }
+    return count;
+}
+
+async function initServer(initialSaves = null) {
     try {
         log('[Worker] Instantiating MU WebAssembly GameServer...', '#93c5fd');
 
@@ -18,6 +67,11 @@ async function initServer() {
             print: (text) => log(`[STDOUT] ${text}`, '#94a3b8'),
             printErr: (text) => log(`[STDERR] ${text}`, '#f87171')
         });
+
+        // Restore initial saves into virtual FS before server boot if provided
+        if (initialSaves) {
+            importSaves(initialSaves);
+        }
 
         // Register outgoing packet callback (Server -> Client)
         const sendCallback = Module.addFunction((ptr, size) => {
@@ -30,6 +84,18 @@ async function initServer() {
         }, 'vii');
 
         Module._SoloServer_SetSendCallback(sendCallback);
+
+        // Register save event callback (Server -> Local Storage auto-save)
+        const saveCallback = Module.addFunction(() => {
+            const currentSaves = exportSaves();
+            self.postMessage({
+                type: 'AUTO_SAVE_DATA',
+                saves: currentSaves,
+                timestamp: Date.now()
+            });
+        }, 'v');
+
+        Module._SoloServer_SetSaveCallback(saveCallback);
 
         log('[Worker] Initializing Game World and Data Files (/Data)...', '#a78bfa');
         const initResult = Module.ccall('SoloServer_Init', 'number', ['string', 'string'], ['/Data', '/saves']);
@@ -76,7 +142,7 @@ self.onmessage = function (e) {
 
     switch (action) {
         case 'INIT': {
-            initServer();
+            initServer(payload?.saves);
             break;
         }
 
@@ -108,6 +174,25 @@ self.onmessage = function (e) {
             Module.HEAPU8.set(rawBytes, ptr);
             Module._SoloServer_ReceiveClientPacket(ptr, rawBytes.length);
             Module._free(ptr);
+            break;
+        }
+
+        case 'EXPORT_SAVES': {
+            const saves = exportSaves();
+            self.postMessage({
+                type: 'SAVES_EXPORTED',
+                saves: saves,
+                timestamp: Date.now()
+            });
+            break;
+        }
+
+        case 'IMPORT_SAVES': {
+            const count = importSaves(payload?.saves);
+            self.postMessage({
+                type: 'SAVES_IMPORTED',
+                count: count
+            });
             break;
         }
 

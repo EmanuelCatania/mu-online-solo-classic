@@ -30,6 +30,9 @@ SOLO_API void SoloServer_ReceiveClientPacket(const uint8_t* data, int size);
 // Register callback for packets emitted by GameServer towards Client
 SOLO_API void SoloServer_SetSendCallback(void (*callback)(const uint8_t* data, int size));
 
+// Register callback triggered whenever player data or warehouse is saved
+SOLO_API void SoloServer_SetSaveCallback(void (*callback)());
+
 // Query basic server stats
 SOLO_API int  SoloServer_GetPlayerCount();
 SOLO_API int  SoloServer_GetMonsterCount();

@@ -154,6 +154,11 @@ SOLO_API void SoloServer_SetSendCallback(void (*callback)(const uint8_t* data, i
 	SoloTransport_SetSendCallback(callback);
 }
 
+SOLO_API void SoloServer_SetSaveCallback(void (*callback)())
+{
+	SoloDataServer_SetSaveEventCallback(callback);
+}
+
 SOLO_API int SoloServer_GetPlayerCount()
 {
 	return gObjTotalUser;

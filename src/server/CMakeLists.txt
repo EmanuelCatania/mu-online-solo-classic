@@ -38,7 +38,7 @@ if (EMSCRIPTEN)
         "-sMODULARIZE=1"
         "-sEXPORT_NAME=createMuServer"
         "-sEXPORTED_RUNTIME_METHODS=['ccall','cwrap','FS','addFunction','removeFunction','setValue','getValue','UTF8ToString','stringToUTF8','HEAPU8','HEAP8','HEAP16','HEAP32','HEAPU32']"
-        "-sEXPORTED_FUNCTIONS=['_malloc','_free','_SoloServer_Init','_SoloServer_Tick','_SoloServer_ConnectPlayer','_SoloServer_DisconnectPlayer','_SoloServer_ReceiveClientPacket','_SoloServer_SetSendCallback','_SoloServer_GetPlayerCount','_SoloServer_GetMonsterCount']"
+        "-sEXPORTED_FUNCTIONS=['_malloc','_free','_SoloServer_Init','_SoloServer_Tick','_SoloServer_ConnectPlayer','_SoloServer_DisconnectPlayer','_SoloServer_ReceiveClientPacket','_SoloServer_SetSendCallback','_SoloServer_SetSaveCallback','_SoloServer_GetPlayerCount','_SoloServer_GetMonsterCount']"
         "-sALLOW_TABLE_GROWTH=1"
         "--preload-file" "${DATA_DIR}@/Data"
     )
