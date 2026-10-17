@@ -43,7 +43,7 @@
 //----------------------------------------------------------------------------------------------------
 // GUILD
 //----------------------------------------------------------------------------------------------------
-23	"Game will start automatically in 10 seconds(s)"
+23	"Game will start automatically in 10 second(s)"
 
 //----------------------------------------------------------------------------------------------------
 // PARTY
@@ -128,7 +128,7 @@
 // POST
 69	"[POST][%s] %s"
 // ADD
-70	"You do not have enought points to add"
+70	"You do not have enough points to add"
 71	"Max stats are %d"
 72	"You added %d points, remaining %d points to add"
 73	"Automatic points add: (%d)"
@@ -136,21 +136,21 @@
 // RESET
 75	"You cannot reset right now"
 76	"You've reached the maximum resets: %d"
-77	"You cannot reset with items equiped"
+77	"You cannot reset with items equipped"
 78	"You can only reset %d times a day"
 79	"You can only reset %d times a week"
 80	"You can only reset %d times a month"
-81	"You reseted correctly. Now you have %d resets"
+81	"You reset correctly. Now you have %d resets"
 82	"Automatic reset: On"
 83	"Automatic reset: Off"
 // GRANDRESET
 84	"You cannot grand reset right now"
 85	"You've reached the maximum grand resets: %d"
-86	"You cannot grand reset with items equiped"
+86	"You cannot grand reset with items equipped"
 87	"You can only grand reset %d times a day"
 88	"You can only grand reset %d times a week"
 89	"You can only grand reset %d times a month"
-90	"You grand reseted correctly. Now you have %d grand resets"
+90	"You grand reset correctly. Now you have %d grand resets"
 // PKCLEAR
 91	"You are not PK"
 92	"You cleared your PK"

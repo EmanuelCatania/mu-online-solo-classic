@@ -21,8 +21,8 @@ extern "C" void DbgLogPublic(const char* msg);
 // Packet_DecryptByte/Packet_EncryptByte).
 // Returns unaff_EBP (register spill — result from lower-level connect call).
 // IDA: CreateSocket (0x00423920)
-// DESVIACION (DLL Reconnect.cpp): CreateSocketNoExit no cierra el cliente si
-// la conexión falla (la usa la reconexión, que reintenta).
+// DEVIATION (DLL Reconnect.cpp): CreateSocketNoExit does not terminate
+// the client if connect fails (used by reconnect logic, which retries).
 static bool s_NonFatalConnect = false;
 static bool s_LastConnectOk = false;
 
@@ -49,12 +49,12 @@ void __cdecl CreateSocket(const char *param_1,unsigned int param_2)
     DbgLogPublic(dbg);
   }
   s_LastConnectOk = iVar2 != 0;
-  // DESVIACION (DLL Reconnect.cpp ReconnectCreateConnection): recordar el
-  // GameServer para poder reconectar.
+  // DEVIATION (DLL Reconnect.cpp ReconnectCreateConnection): remember GameServer
+  // to allow reconnecting.
   if (iVar2 != 0 && !gNetwork.IsConnectServerMode())
     gReconnect.OnGameServerConnect(param_1, (WORD)param_2);
   if (iVar2 == 0 && s_NonFatalConnect) {
-    DbgLogPublic("NET: CreateSocket falló (reconexión: se reintenta)");
+    DbgLogPublic("NET: CreateSocket failed (reconnection: retrying)");
     return;
   }
   if (iVar2 == 0) {
@@ -72,7 +72,7 @@ void __cdecl CreateSocket(const char *param_1,unsigned int param_2)
     if (!s_ConnFailHandled) {
         s_ConnFailHandled = true;
         MessageBoxA((HWND)(uintptr_t)gWindow.GetHwnd(),
-                    "No se puede conectar con el servidor.",
+                    "Failed to connect to the server.",
                     "Mu Online",
                     MB_OK | MB_ICONERROR);
         PostQuitMessage(0);
@@ -86,8 +86,8 @@ void __cdecl CreateSocket(const char *param_1,unsigned int param_2)
 }
 
 
-// IDA: CreateSocket (0x00423920). Conserva los registros de la HashTable
-// heredada; sus claves apuntan a los mismos miembros durante toda la sesión.
+// IDA: CreateSocket (0x00423920). Preserves inherited HashTable records;
+// keys point to the same members throughout the entire session.
 void CNetwork::InitializePacketSerials()
 {
     const char* param_1 = nullptr;
@@ -109,9 +109,8 @@ void CNetwork::InitializePacketSerials()
   local_4[1] = 0;
   local_4[2] = 0;
   local_4[3] = 0;
-  // Lo que sigue es ofuscación HashTable inlined sobre m_SendSerial/cec
-  // (ref-count de session-key bytes). Neutralizado vía fake vtable en
-  // MAIN_HASH_CLASS + capacity (DAT_055c9bd4) = 0 → loops se saltean.
+  // Inlined HashTable obfuscation over m_SendSerial/cec (session-key ref-count).
+  // Neutralized via fake vtable in MAIN_HASH_CLASS + capacity (DAT_055c9bd4) = 0 -> loops skipped.
   param_1 = &m_SendSerial;
   uVar3 = (**(code **)(MAIN_HASH_CLASS + 0xc))(&m_SendSerial);
   uVar6 = 0;
@@ -261,10 +260,9 @@ LAB_00423b59:
 //   2 = host name resolution failure
 //   0 = hWnd null OR connect failed -> closesocket
 //
-// Net_Connect_Server (CreateSocket) hace el connect de alto nivel, incluido el
-// bootstrap de la hash-table; CWsctlc::Connect es el helper interno de
-// connect+select.  Hoy ningún llamador del build lo usa directamente; el
-// símbolo queda exportado.
+// Net_Connect_Server (CreateSocket) handles high-level connect, including
+// hash-table bootstrap; CWsctlc::Connect is the internal connect+select helper.
+// Currently no build caller invokes it directly; the symbol remains exported.
 // =============================================================================
 // IDA: CWsctlc::Connect (0x0043DCD0)
 extern "C" int __cdecl CWsctlc_Connect(DWORD This, const char* ip_addr,
