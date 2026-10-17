@@ -408,6 +408,60 @@
             font-size: 0.75rem;
             font-weight: 600;
         }
+
+        .realm-bar {
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            background: rgba(15, 23, 42, 0.75);
+            padding: 0.3rem 0.45rem;
+            border-radius: 10px;
+            border: 1px solid var(--border-color);
+        }
+
+        .realm-btn {
+            appearance: none;
+            border: 1px solid transparent;
+            background: transparent;
+            color: var(--text-muted);
+            font-family: inherit;
+            font-size: 0.78rem;
+            font-weight: 700;
+            padding: 0.4rem 0.85rem;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            align-items: center;
+            gap: 0.35rem;
+            user-select: none;
+        }
+
+        .realm-btn:hover {
+            color: var(--text-main);
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .realm-btn.active-easy {
+            background: rgba(16, 185, 129, 0.2);
+            color: #34d399;
+            border-color: rgba(16, 185, 129, 0.45);
+            box-shadow: 0 0 12px rgba(16, 185, 129, 0.3);
+        }
+
+        .realm-btn.active-medium {
+            background: rgba(245, 158, 11, 0.2);
+            color: #fbbf24;
+            border-color: rgba(245, 158, 11, 0.45);
+            box-shadow: 0 0 12px rgba(245, 158, 11, 0.3);
+        }
+
+        .realm-btn.active-hard {
+            background: rgba(239, 68, 68, 0.2);
+            color: #f87171;
+            border-color: rgba(239, 68, 68, 0.45);
+            box-shadow: 0 0 12px rgba(239, 68, 68, 0.3);
+        }
     </style>
 </head>
 <body>
@@ -418,10 +472,17 @@
             <span class="version-badge">Classic 0.97k WASM</span>
         </div>
 
+        <!-- 3 Realm Difficulty Selector -->
+        <div class="realm-bar">
+            <button class="realm-btn" id="realmBtn0" onclick="switchRealm(0)">🟢 Easy (300x)</button>
+            <button class="realm-btn" id="realmBtn1" onclick="switchRealm(1)">🟡 Medium (100x)</button>
+            <button class="realm-btn" id="realmBtn2" onclick="switchRealm(2)">🔴 Hard (30x)</button>
+        </div>
+
         <div class="header-controls">
             <!-- LocalStorage Status Pill -->
             <div class="save-indicator">
-                <span class="storage-pill">🔒 LocalStorage (AES-256)</span>
+                <span class="storage-pill" id="storagePill">🔒 Easy Realm</span>
                 <span id="saveStatus">Готово</span>
             </div>
 
@@ -436,6 +497,37 @@
     <main>
         <!-- Sidebar Controls -->
         <div class="sidebar">
+
+            <!-- Difficulty & Rates Card -->
+            <div class="card" id="difficultyCard" style="border-color: rgba(16, 185, 129, 0.4);">
+                <div class="card-title">
+                    <span id="realmCardTitle">🟢 Реалм: Easy</span>
+                    <span id="realmBadge" style="color: #34d399; font-size: 0.75rem; font-weight: 700;">300x EXP</span>
+                </div>
+                <div class="stat-grid">
+                    <div class="stat-box">
+                        <div class="stat-label">EXP / Event EXP</div>
+                        <div class="stat-value" id="rateExp" style="font-size: 1.15rem; color: #34d399;">300x</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-label">Item / Zen Drop</div>
+                        <div class="stat-value" id="rateDrop" style="font-size: 1.15rem; color: #fbbf24;">150% / 100%</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-label">Reset / Grand Reset</div>
+                        <div class="stat-value" id="rateReset" style="font-size: 1.05rem; color: #60a5fa;">Lv 300 / 50 Res</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-label">Монстри HP / DMG</div>
+                        <div class="stat-value" id="rateMonster" style="font-size: 1.05rem; color: #f472b6;">0.7x (Слабкі)</div>
+                    </div>
+                </div>
+                <div style="margin-top: 0.85rem; padding-top: 0.65rem; border-top: 1px solid var(--border-color); font-size: 0.75rem; color: var(--text-dim); display: flex; justify-content: space-between; align-items: center;">
+                    <span id="ratePenalty">💀 Штраф: Немає (0%)</span>
+                    <span id="rateExc">✨ Exc: 1.5x</span>
+                    <span style="color: #ef4444; font-weight: 600;" title="Обмін речами між гравцями вимкнено">🚫 Trade: Off</span>
+                </div>
+            </div>
 
             <!-- Manual Save / Load Controls -->
             <div class="card" style="border-color: var(--border-highlight);">
@@ -568,11 +660,142 @@
     </main>
 
     <script>
-        const STORAGE_KEY = 'mu_online_solo_saves_v1';
+        const REALMS = [
+            {
+                id: 0,
+                name: 'Easy',
+                color: '#34d399',
+                border: 'rgba(16, 185, 129, 0.4)',
+                btnClass: 'active-easy',
+                key: 'mu_solo_save_easy',
+                exp: '300x',
+                eventExp: '300x',
+                drop: '150% / 100%',
+                reset: 'Lv 300 / 50 Res',
+                monster: '0.7x (Слабкі)',
+                penalty: '💀 Штраф: Немає (0%)',
+                exc: '✨ Exc: 1.5x'
+            },
+            {
+                id: 1,
+                name: 'Medium',
+                color: '#fbbf24',
+                border: 'rgba(245, 158, 11, 0.4)',
+                btnClass: 'active-medium',
+                key: 'mu_solo_save_medium',
+                exp: '100x',
+                eventExp: '100x',
+                drop: '100% / 50%',
+                reset: 'Lv 400 / 100 Res',
+                monster: '1.0x (Базові)',
+                penalty: '💀 Штраф: Звичайний (3%)',
+                exc: '✨ Exc: 1.0x'
+            },
+            {
+                id: 2,
+                name: 'Hard',
+                color: '#f87171',
+                border: 'rgba(239, 68, 68, 0.4)',
+                btnClass: 'active-hard',
+                key: 'mu_solo_save_hard',
+                exp: '30x',
+                eventExp: '30x',
+                drop: '50% / 25%',
+                reset: 'Lv 400 / 150 Res',
+                monster: '1.5x (Хардкор)',
+                penalty: '💀 Штраф: Подвійний (6%)',
+                exc: '✨ Exc: 0.5x'
+            }
+        ];
+
+        let currentRealm = 0;
         let worker = null;
         let rxCount = 0;
         let txCount = 0;
         let activePlayerIndex = -1;
+
+        function getStorageKey() {
+            return REALMS[currentRealm].key;
+        }
+
+        function updateRealmUI() {
+            const r = REALMS[currentRealm];
+
+            for (let i = 0; i < 3; i++) {
+                const btn = document.getElementById(`realmBtn${i}`);
+                if (btn) {
+                    btn.className = `realm-btn ${i === currentRealm ? REALMS[i].btnClass : ''}`;
+                }
+            }
+
+            const pill = document.getElementById('storagePill');
+            if (pill) {
+                pill.textContent = `🔒 ${r.name} Realm`;
+                pill.style.color = r.color;
+            }
+
+            const card = document.getElementById('difficultyCard');
+            if (card) card.style.borderColor = r.border;
+
+            const title = document.getElementById('realmCardTitle');
+            if (title) title.textContent = `${r.id === 0 ? '🟢' : r.id === 1 ? '🟡' : '🔴'} Реалм: ${r.name}`;
+
+            const badge = document.getElementById('realmBadge');
+            if (badge) {
+                badge.textContent = `${r.exp} EXP`;
+                badge.style.color = r.color;
+            }
+
+            const expEl = document.getElementById('rateExp');
+            if (expEl) { expEl.textContent = `${r.exp} / ${r.eventExp}`; expEl.style.color = r.color; }
+
+            const dropEl = document.getElementById('rateDrop');
+            if (dropEl) dropEl.textContent = r.drop;
+
+            const resetEl = document.getElementById('rateReset');
+            if (resetEl) resetEl.textContent = r.reset;
+
+            const monsterEl = document.getElementById('rateMonster');
+            if (monsterEl) monsterEl.textContent = r.monster;
+
+            const penaltyEl = document.getElementById('ratePenalty');
+            if (penaltyEl) penaltyEl.textContent = r.penalty;
+
+            const excEl = document.getElementById('rateExc');
+            if (excEl) excEl.textContent = r.exc;
+        }
+
+        function switchRealm(mode) {
+            if (mode === currentRealm) return;
+
+            appendLog(`[Реалм] Перемикання на ${REALMS[mode].name}... Збереження поточного прогресу.`, '#fbbf24');
+
+            // 1. Persist current realm before switching
+            if (worker) {
+                worker.postMessage({ action: 'EXPORT_SAVES' });
+            }
+
+            currentRealm = mode;
+            localStorage.setItem('mu_solo_active_realm', currentRealm);
+
+            // 2. Fetch new realm saves
+            let newSaves = null;
+            const raw = localStorage.getItem(getStorageKey());
+            if (raw) {
+                try { newSaves = JSON.parse(raw); } catch(e) {}
+            }
+
+            // 3. Inform worker of realm switch
+            if (worker) {
+                worker.postMessage({
+                    action: 'SWITCH_REALM',
+                    payload: { saves: newSaves, mode: currentRealm }
+                });
+            }
+
+            updateRealmUI();
+            updateSaveCountBadge();
+        }
 
         function appendLog(text, color = '#cbd5e1') {
             const body = document.getElementById('logBody');
@@ -601,7 +824,7 @@
 
         function updateSaveCountBadge() {
             try {
-                const raw = localStorage.getItem(STORAGE_KEY);
+                const raw = localStorage.getItem(getStorageKey());
                 if (raw) {
                     const parsed = JSON.parse(raw);
                     const count = parsed.filesCount !== undefined ? parsed.filesCount : Object.keys(parsed).length;
@@ -669,10 +892,27 @@
         }
 
         function init() {
-            appendLog('Завантаження сейвів з браузерного LocalStorage...', '#a78bfa');
+            // Restore active realm selection
+            const savedRealm = localStorage.getItem('mu_solo_active_realm');
+            if (savedRealm !== null) {
+                const parsedRealm = parseInt(savedRealm, 10);
+                if (!isNaN(parsedRealm) && parsedRealm >= 0 && parsedRealm <= 2) {
+                    currentRealm = parsedRealm;
+                }
+            }
+
+            // Migration from legacy single-slot key if needed
+            const legacySave = localStorage.getItem('mu_online_solo_saves_v1');
+            if (legacySave && !localStorage.getItem(REALMS[0].key)) {
+                localStorage.setItem(REALMS[0].key, legacySave);
+            }
+
+            updateRealmUI();
+
+            appendLog(`Завантаження сейвів для реалму [${REALMS[currentRealm].name}]...`, '#a78bfa');
             let initialSaves = null;
             try {
-                const stored = localStorage.getItem(STORAGE_KEY);
+                const stored = localStorage.getItem(getStorageKey());
                 if (stored) {
                     initialSaves = JSON.parse(stored);
                     const count = initialSaves.filesCount !== undefined ? initialSaves.filesCount : Object.keys(initialSaves).length;
@@ -680,8 +920,8 @@
                     appendLog(`Знайдено збереження у LocalStorage (${count} файлів${enc})`, '#34d399');
                     updateSaveStatus(`Завантажено (${count} файлів)`);
                 } else {
-                    appendLog('Збережень у LocalStorage ще немає (перший запуск)', '#94a3b8');
-                    updateSaveStatus('Нова гра');
+                    appendLog(`Збережень у LocalStorage для [${REALMS[currentRealm].name}] ще немає (новий реалм)`, '#94a3b8');
+                    updateSaveStatus('Новий реалм');
                 }
             } catch (err) {
                 appendLog(`Помилка читання LocalStorage: ${err.message}`, '#ef4444');
@@ -692,7 +932,7 @@
             worker = new Worker('server_worker.js');
 
             worker.onmessage = function (e) {
-                const { type, message, color, monsters, players, data, saves, count } = e.data;
+                const { type, message, color, monsters, players, data, saves, count, mode } = e.data;
 
                 if (type === 'LOG') {
                     appendLog(message, color);
@@ -702,7 +942,15 @@
                     document.getElementById('monsterCount').textContent = monsters.toLocaleString();
                     document.getElementById('playerCount').textContent = players;
                     document.getElementById('btnConnect').disabled = false;
-                    appendLog('GameServer WebAssembly успішно стартував (17 карт, 3,245 монстрів)', '#34d399');
+                    appendLog(`GameServer WebAssembly запущено (Реалм: ${REALMS[currentRealm].name}, 17 карт, 3,245 монстрів)`, '#34d399');
+                } else if (type === 'REALM_SWITCHED') {
+                    updateSaveStatus(`Реалм ${REALMS[mode].name} (${count} ф.)`, '#34d399');
+                    updateSaveCountBadge();
+                    appendLog(`[Реалм] Успішно активовано ${REALMS[mode].name}! Завантажено ${count} персонаж(ів) / файлів. Скриня ізольована.`, '#34d399');
+                    // Refresh character list if connected
+                    if (activePlayerIndex >= 0) {
+                        requestCharList();
+                    }
                 } else if (type === 'PACKET_FROM_SERVER') {
                     addPacketRow('RX', data);
                 } else if (type === 'PLAYER_CONNECTED') {
@@ -711,14 +959,14 @@
                     document.getElementById('btnLogin').disabled = false;
                     appendLog(`Сесія гравця створена. Індекс: ${activePlayerIndex}`, '#34d399');
                 } else if (type === 'AUTO_SAVE_DATA') {
-                    // Automatically persist to LocalStorage
+                    // Automatically persist to current realm LocalStorage
                     try {
-                        localStorage.setItem(STORAGE_KEY, JSON.stringify(saves));
+                        localStorage.setItem(getStorageKey(), JSON.stringify(saves));
                         const fileCount = saves.filesCount !== undefined ? saves.filesCount : Object.keys(saves).length;
                         updateSaveStatus(`Автосейв (${fileCount} ф.)`, '#34d399');
                         updateSaveCountBadge();
                         const hashSnippet = saves.checksum ? ` (SHA-256: ${saves.checksum.substring(0, 8)}...)` : '';
-                        appendLog(`[AutoSave] Гра зашифрована та збережена у LocalStorage 🔒 (${fileCount} файлів${hashSnippet})`, '#34d399');
+                        appendLog(`[AutoSave] [${REALMS[currentRealm].name}] Гра збережена у LocalStorage 🔒 (${fileCount} ф.${hashSnippet})`, '#34d399');
                     } catch (err) {
                         appendLog(`[AutoSave] Помилка запису в LocalStorage: ${err.message}`, '#ef4444');
                     }
@@ -729,11 +977,11 @@
                     } else {
                         // Manual Save to LocalStorage
                         try {
-                            localStorage.setItem(STORAGE_KEY, JSON.stringify(saves));
+                            localStorage.setItem(getStorageKey(), JSON.stringify(saves));
                             const fileCount = saves.filesCount !== undefined ? saves.filesCount : Object.keys(saves).length;
                             updateSaveStatus(`Збережено (${fileCount} ф.)`, '#34d399');
                             updateSaveCountBadge();
-                            appendLog(`[Manual Save] Стан гри зашифровано (AES-256-GCM) та збережено у LocalStorage! 🔒`, '#34d399');
+                            appendLog(`[Manual Save] [${REALMS[currentRealm].name}] Стан гри зашифровано (AES-256-GCM) та збережено! 🔒`, '#34d399');
                             const btn = document.getElementById('btnManualSave');
                             if (btn) {
                                 const old = btn.textContent;
@@ -755,7 +1003,6 @@
                             btn.textContent = '✅ Завантажено!';
                             setTimeout(() => { btn.textContent = old; }, 1500);
                         }
-                        // Automatically refresh character list
                         requestCharList();
                     } else {
                         updateSaveStatus('Помилка', '#ef4444');
@@ -769,7 +1016,10 @@
                 }
             };
 
-            worker.postMessage({ action: 'INIT', payload: { saves: initialSaves } });
+            worker.postMessage({
+                action: 'INIT',
+                payload: { saves: initialSaves, difficulty: currentRealm }
+            });
 
             // Автоматичне фонове збереження стану гри у LocalStorage кожні 30 секунд
             setInterval(() => {
@@ -788,18 +1038,18 @@
 
         // Manual Save to LocalStorage
         function manualSave() {
-            appendLog('[Save] Зберігаємо поточний стан гри у LocalStorage...', '#fbbf24');
+            appendLog(`[Save] [${REALMS[currentRealm].name}] Зберігаємо стан гри у LocalStorage...`, '#fbbf24');
             window._isDownloadingExport = false;
             worker.postMessage({ action: 'EXPORT_SAVES' });
         }
 
         // Manual Load from LocalStorage
         function manualLoad() {
-            appendLog('[Load] Завантажуємо стан гри з LocalStorage...', '#fbbf24');
+            appendLog(`[Load] [${REALMS[currentRealm].name}] Завантажуємо стан гри з LocalStorage...`, '#fbbf24');
             try {
-                const stored = localStorage.getItem(STORAGE_KEY);
+                const stored = localStorage.getItem(getStorageKey());
                 if (!stored) {
-                    alert('Немає збережень у LocalStorage!');
+                    alert(`Немає збережень у LocalStorage для реалму ${REALMS[currentRealm].name}!`);
                     return;
                 }
                 const saves = JSON.parse(stored);
@@ -809,9 +1059,9 @@
             }
         }
 
-        // Export save file (.json) to disk
+        // Export save file (.musav.json) to disk
         function exportSaveFile() {
-            appendLog('[Export] Експорт файлу збереження...', '#60a5fa');
+            appendLog(`[Export] [${REALMS[currentRealm].name}] Експорт файлу збереження...`, '#60a5fa');
             window._isDownloadingExport = true;
             worker.postMessage({ action: 'EXPORT_SAVES' });
         }
@@ -822,16 +1072,16 @@
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             const date = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-');
-            a.href = url;
-            a.download = `mu_solo_classic_save_${date}.musav.json`;
+            const realmName = REALMS[currentRealm].name.toLowerCase();
+            a.download = `mu_solo_classic_${realmName}_save_${date}.musav.json`;
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
             URL.revokeObjectURL(url);
-            appendLog(`[Export] Файл збереження завантажено на комп'ютер!`, '#34d399');
+            appendLog(`[Export] Файл збереження (${REALMS[currentRealm].name}) завантажено на комп'ютер!`, '#34d399');
         }
 
-        // Import save file (.json) from disk
+        // Import save file (.musav.json) from disk
         function triggerImportFileInput() {
             document.getElementById('importFileInput').click();
         }
@@ -844,10 +1094,10 @@
             reader.onload = function(e) {
                 try {
                     const saves = JSON.parse(e.target.result);
-                    // Also store into LocalStorage
-                    localStorage.setItem(STORAGE_KEY, JSON.stringify(saves));
+                    // Store into active realm's LocalStorage slot
+                    localStorage.setItem(getStorageKey(), JSON.stringify(saves));
                     worker.postMessage({ action: 'IMPORT_SAVES', payload: { saves: saves } });
-                    appendLog(`[Import] Файл ${file.name} успішно імпортовано!`, '#34d399');
+                    appendLog(`[Import] [${REALMS[currentRealm].name}] Файл ${file.name} успішно імпортовано!`, '#34d399');
                 } catch (err) {
                     alert(`Помилка відкриття файлу сейву: ${err.message}`);
                 }

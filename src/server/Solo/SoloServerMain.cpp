@@ -13,6 +13,7 @@
 #include "Util.h"
 #include "Protocol.h"
 #include "MonsterManager.h"
+#include "SoloDifficulty.h"
 
 static bool g_SoloServerInitialized = false;
 
@@ -61,6 +62,8 @@ SOLO_API int SoloServer_Init(const char* dataDir, const char* saveDir)
 	gQueueTimer.CreateTimer(QUEUE_TIMER_FIRST, 1000, &QueueTimerCallback);
 	gQueueTimer.CreateTimer(QUEUE_TIMER_CLOSE, 1000, &QueueTimerCallback);
 	gQueueTimer.CreateTimer(QUEUE_TIMER_ACCOUNT_LEVEL, 60000, &QueueTimerCallback);
+
+	SoloDifficulty_Apply(SoloDifficulty_GetMode());
 
 	g_SoloServerInitialized = true;
 	LogAdd(LOG_GREEN, "[SoloServer] Solo Classic MU Server started successfully!");
@@ -169,4 +172,15 @@ SOLO_API int SoloServer_GetMonsterCount()
 	return gObjTotalMonster;
 }
 
+SOLO_API void SoloServer_SetDifficulty(int mode)
+{
+	SoloDifficulty_Apply((SOLO_DIFFICULTY_MODE)mode);
+}
+
+SOLO_API int SoloServer_GetDifficulty()
+{
+	return (int)SoloDifficulty_GetMode();
+}
+
 } // extern "C"
+

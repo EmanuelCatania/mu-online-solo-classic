@@ -42,6 +42,7 @@
 #include "Util.h"
 #include "Viewport.h"
 #include "Warehouse.h"
+#include "SoloDifficulty.h"
 
 int gObjCount;
 
@@ -233,10 +234,10 @@ void gObjSetExperienceTable()
 {
 	memset(gLevelExperience, 0, sizeof(gLevelExperience));
 
-	// Par·metros ajustables
-	double maxExperience = DWORD_MAX * 0.95; // Aproximar al m·ximo seguro
+	// Par√°metros ajustables
+	double maxExperience = DWORD_MAX * 0.95; // Aproximar al m√°ximo seguro
 
-	// Ajustar el multiplicador din·micamente
+	// Ajustar el multiplicador din√°micamente
 	double scaleFactor = maxExperience / pow(gServerInfo.m_MaxCharacterLevel, 3);
 
 	for (int level = 1; level <= gServerInfo.m_MaxCharacterLevel; level++)
@@ -1773,6 +1774,23 @@ void gObjUserDie(LPOBJ lpObj, LPOBJ lpTarget)
 	if (gGuild.GuildWarCheck(lpTarget, lpObj) != false)
 	{
 		return;
+	}
+
+	// Apply Solo Difficulty Death Penalty (EXP Loss)
+	if (g_SoloDifficulty.deathExpPenalty > 0.0f && lpObj->NextExperience > 0)
+	{
+		DWORD expLoss = (DWORD)(lpObj->NextExperience * g_SoloDifficulty.deathExpPenalty);
+		if (lpObj->Experience > expLoss)
+		{
+			lpObj->Experience -= expLoss;
+		}
+		else
+		{
+			lpObj->Experience = 0;
+		}
+
+		gNotice.GCNoticeSend(lpObj->Index, 1, "Death penalty (%s): -%u EXP",
+			SoloDifficulty_GetName(SoloDifficulty_GetMode()), expLoss);
 	}
 }
 

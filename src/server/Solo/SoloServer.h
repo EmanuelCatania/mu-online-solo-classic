@@ -37,6 +37,11 @@ SOLO_API void SoloServer_SetSaveCallback(void (*callback)());
 SOLO_API int  SoloServer_GetPlayerCount();
 SOLO_API int  SoloServer_GetMonsterCount();
 
+// Difficulty management (0: Easy, 1: Medium, 2: Hard)
+SOLO_API void SoloServer_SetDifficulty(int mode);
+SOLO_API int  SoloServer_GetDifficulty();
+
 #ifdef __cplusplus
 }
 #endif
+

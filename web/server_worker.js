@@ -207,7 +207,21 @@ async function importEncryptedSaves(container) {
     }
 }
 
-async function initServer(initialSaves = null) {
+function clearVirtualSaves() {
+    if (!Module || !Module.FS) return;
+    try {
+        if (Module.FS.analyzePath('/saves').exists) {
+            const files = Module.FS.readdir('/saves').filter(f => f !== '.' && f !== '..');
+            for (const file of files) {
+                Module.FS.unlink('/saves/' + file);
+            }
+        }
+    } catch (err) {
+        log(`[Worker] Error clearing /saves: ${err.message}`, '#f87171');
+    }
+}
+
+async function initServer(initialSaves = null, difficulty = 0) {
     try {
         log('[Worker] Instantiating MU WebAssembly GameServer...', '#93c5fd');
 
@@ -216,6 +230,11 @@ async function initServer(initialSaves = null) {
             print: (text) => log(`[STDOUT] ${text}`, '#94a3b8'),
             printErr: (text) => log(`[STDERR] ${text}`, '#f87171')
         });
+
+        // Set initial difficulty mode (0: Easy, 1: Medium, 2: Hard)
+        if (Module._SoloServer_SetDifficulty) {
+            Module._SoloServer_SetDifficulty(difficulty);
+        }
 
         // Restore initial saves into virtual FS before server boot if provided
         if (initialSaves) {
@@ -277,7 +296,8 @@ async function initServer(initialSaves = null) {
         self.postMessage({
             type: 'SERVER_READY',
             monsters: monsters,
-            players: players
+            players: players,
+            difficulty: difficulty
         });
     } catch (err) {
         log(`[Worker] Critical Exception: ${err.message}`, '#ef4444');
@@ -294,7 +314,38 @@ self.onmessage = async function (e) {
 
     switch (action) {
         case 'INIT': {
-            await initServer(payload?.saves);
+            await initServer(payload?.saves, payload?.difficulty ?? 0);
+            break;
+        }
+
+        case 'SET_DIFFICULTY': {
+            const mode = payload?.mode ?? 0;
+            if (Module && Module._SoloServer_SetDifficulty) {
+                Module._SoloServer_SetDifficulty(mode);
+                const modeNames = ['Easy (300x)', 'Medium (100x)', 'Hard (30x)'];
+                log(`[Worker] Рівень складності встановлено: ${modeNames[mode] || mode}`, '#34d399');
+                self.postMessage({
+                    type: 'DIFFICULTY_SET',
+                    mode: mode
+                });
+            }
+            break;
+        }
+
+        case 'SWITCH_REALM': {
+            clearVirtualSaves();
+            const count = await importEncryptedSaves(payload?.saves);
+            const mode = payload?.mode ?? 0;
+            if (Module && Module._SoloServer_SetDifficulty) {
+                Module._SoloServer_SetDifficulty(mode);
+            }
+            const modeNames = ['Easy (300x)', 'Medium (100x)', 'Hard (30x)'];
+            log(`[Worker] Реалм перемкнено на: ${modeNames[mode]}. Завантажено ${count} файл(ів) сейву.`, '#34d399');
+            self.postMessage({
+                type: 'REALM_SWITCHED',
+                mode: mode,
+                count: count
+            });
             break;
         }
 

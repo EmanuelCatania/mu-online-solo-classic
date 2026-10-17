@@ -27,6 +27,7 @@
 #include "SkillManager.h"
 #include "Util.h"
 #include "Viewport.h"
+#include "SoloDifficulty.h"
 
 void gObjMonsterDieGiveItem(LPOBJ lpObj, LPOBJ lpTarget)
 {
@@ -79,6 +80,8 @@ void gObjMonsterDieGiveItem(LPOBJ lpObj, LPOBJ lpTarget)
 	int ExcItemDropRate = gMapManager.GetMapExcItemDropRate(lpObj->Map);
 
 	ExcItemDropRate = gBonusManager.GetBonusValue(lpTarget, BONUS_INDEX_EXC_ITEM_DROP_RATE, ExcItemDropRate, -1, -1, lpObj->Class, lpObj->Level);
+
+	ExcItemDropRate = (int)(ExcItemDropRate * g_SoloDifficulty.excDropRate);
 
 	if (lpObj->Level >= 25 && (GetLargeRand() % 1000000) < ExcItemDropRate)
 	{
@@ -244,14 +247,14 @@ bool gObjSetMonster(int aIndex, int MonsterClass)
 
 	lpObj->Level = lpInfo->Level;
 	lpObj->PhysiSpeed = lpInfo->AttackSpeed;
-	lpObj->PhysiDamageMin = lpInfo->DamageMin;
-	lpObj->PhysiDamageMax = lpInfo->DamageMax;
+	lpObj->PhysiDamageMin = (int)(lpInfo->DamageMin * g_SoloDifficulty.monsterDmgRate);
+	lpObj->PhysiDamageMax = (int)(lpInfo->DamageMax * g_SoloDifficulty.monsterDmgRate);
 	lpObj->Defense = lpInfo->Defense;
 	lpObj->MagicDefense = lpInfo->MagicDefense;
 	lpObj->AttackSuccessRate = lpInfo->AttackRate;
 	lpObj->DefenseSuccessRate = lpInfo->DefenseRate;
-	lpObj->Life = (float)lpInfo->Life;
-	lpObj->MaxLife = (float)lpInfo->Life;
+	lpObj->Life = (float)(lpInfo->Life * g_SoloDifficulty.monsterHpRate);
+	lpObj->MaxLife = (float)(lpInfo->Life * g_SoloDifficulty.monsterHpRate);
 	lpObj->Mana = (float)lpInfo->Mana;
 	lpObj->MaxMana = (float)lpInfo->Mana;
 	lpObj->MoveRange = lpInfo->MoveRange;
