@@ -70,9 +70,7 @@ mu-online-solo-classic/
 │   │   └── test_node.cjs           # Node.js automated test runner for the WASM build
 │   └── client/                     # WebGL2 WebAssembly Client port
 │       ├── browser/                # WebGL2 immediate-mode pipeline, virtual stick, keyboard & shell
-│       ├── gateway/                # WebSocket TCP gateway proxy
 │       ├── docs/                   # Milestone porting specifications (M0-M7)
-│       ├── review/                 # Captured scene screenshots & verification specs
 │       └── link-login.bat          # Client build and link automation
 ├── web/
 │   ├── index.html                  # Interactive web dashboard & testbed GUI
@@ -279,7 +277,7 @@ int SoloServer_GetPlayerCount();
 - [x] **Stage 5**: AES-256-GCM + SHA-256 encrypted browser persistence with standalone file export/import.
 - [x] **Stage 6**: Multi-difficulty realm system (Easy, Medium, Hard) with isolated storage and anti-trade enforcement.
 - [x] **Stage 7**: Integrate 3D WebGL2 / WebAssembly client renderer with touch controls, virtual joystick, gamepad, and audio.
-- [ ] **Stage 8**: Direct In-Memory bridge between WebGL2 Client and Solo GameServer (bypassing WebSocket proxy).
+- [ ] **Stage 8**: Direct In-Memory bridge between WebGL2 Client and Solo GameServer.
 
 ---
 
