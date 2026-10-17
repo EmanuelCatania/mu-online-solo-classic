@@ -1,112 +1,178 @@
-# Browser build and compile probes. Leaves the native MSVC project untouched.
-# Requires Emscripten SDK 6.0.12 (or newer 6.x) activated in this process.
-$ErrorActionPreference = "Continue"
-if (Get-Variable -Name PSNativeCommandUseErrorActionPreference -ErrorAction SilentlyContinue) {
-    $PSNativeCommandUseErrorActionPreference = $false
-}
+<#
+.SYNOPSIS
+    Builds the MU Online Solo Classic WebAssembly Client.
+    100% self-contained within the repository.
+#>
 
-$Port = $PSScriptRoot
-$Client = Join-Path (Split-Path -Parent $Port) "reference\Mu-97k-Client-Source"
-$Out = Join-Path $Port "out"
-$Proof = Join-Path $Port "proof"
-New-Item -ItemType Directory -Force -Path $Out, $Proof | Out-Null
+param(
+    [switch]$RecompileAll = $false
+)
 
-function Invoke-Emcc {
-    param([string[]]$EmccArgs, [string]$Log)
-    Write-Host "emcc $($EmccArgs[0])"
-    $output = & emcc @EmccArgs 2>&1
-    $code = $LASTEXITCODE
-    $output | Out-File -FilePath $Log -Encoding utf8
-    if ($code -ne 0) {
-        $output | Select-Object -Last 30 | ForEach-Object { Write-Host $_ }
+$ErrorActionPreference = "Stop"
+
+# --- 1. Detect Emscripten SDK ---
+if (-not (Get-Command emcc -ErrorAction SilentlyContinue)) {
+    $cand = @()
+    if ($env:EMSDK -and (Test-Path (Join-Path $env:EMSDK "emsdk_env.bat"))) { $cand += $env:EMSDK }
+    $userEmsdk = Join-Path $env:USERPROFILE "emsdk"
+    if (Test-Path (Join-Path $userEmsdk "emsdk_env.bat")) { $cand += $userEmsdk }
+    if (Test-Path "C:\emsdk\emsdk_env.bat") { $cand += "C:\emsdk" }
+
+    if ($cand.Count -gt 0) {
+        $emsdkDir = $cand[0]
+        Write-Host "Activating Emscripten SDK from $emsdkDir..." -ForegroundColor Cyan
+        $envVars = & cmd.exe /c "call `"$emsdkDir\emsdk_env.bat`" >nul 2>&1 && set"
+        foreach ($line in $envVars) {
+            $idx = $line.IndexOf('=')
+            if ($idx -gt 0) {
+                $name = $line.Substring(0, $idx)
+                $val = $line.Substring($idx + 1)
+                [Environment]::SetEnvironmentVariable($name, $val, "Process")
+            }
+        }
     }
-    return $code
 }
 
-# --- ABI ---
-$code = Invoke-Emcc -Log (Join-Path $Proof "abi_probe-build.txt") -EmccArgs @(
-    (Join-Path $Port "browser\abi_probe.cpp"),
-    "-o", (Join-Path $Out "abi_probe.js"),
-    "-sENVIRONMENT=node"
+if (-not (Get-Command emcc -ErrorAction SilentlyContinue)) {
+    Write-Error "emcc compiler not found in PATH, `$env:EMSDK, or `$env:USERPROFILE\emsdk. Please install/activate Emscripten SDK."
+    exit 1
+}
+
+# --- 2. Resolve Paths (Strictly Relative to Repo) ---
+$ClientDir = $PSScriptRoot
+$RepoRoot = Resolve-Path (Join-Path $ClientDir "..\..")
+$OutDir = Join-Path $ClientDir "out"
+$ObjDir = Join-Path $OutDir "all"
+$ProofDir = Join-Path $ClientDir "proof"
+$DataDir = Join-Path $ClientDir "Client\Data"
+$ConfigFile = Join-Path $ClientDir "Client\Config.ini"
+$WebDir = Join-Path $RepoRoot "web"
+$SourcesList = Join-Path $ClientDir "m2-sources.txt"
+
+New-Item -ItemType Directory -Force -Path $ObjDir, $ProofDir, $WebDir | Out-Null
+
+if (-not (Test-Path $DataDir)) {
+    Write-Error "Client data directory not found at: $DataDir"
+    exit 1
+}
+
+if (-not (Test-Path $ConfigFile)) {
+    Write-Error "Config file not found at: $ConfigFile"
+    exit 1
+}
+
+# --- 3. Compile Object Files if needed ---
+$Includes = @(
+    "-I", (Join-Path $ClientDir "browser"),
+    "-I", (Join-Path $ClientDir "browser\compat"),
+    "-I", (Join-Path $ClientDir "src"),
+    "-I", (Join-Path $ClientDir "lib\libjpeg\jpeg-6b"),
+    "-I", (Join-Path $ClientDir "lib\miniaudio")
 )
-if ($code -ne 0) { throw "abi_probe failed: $code" }
-node (Join-Path $Out "abi_probe.js") | Tee-Object -FilePath (Join-Path $Proof "abi_probe-run.txt")
+$CxxFlags = @("-c", "-std=c++17", "-ferror-limit=5", "-Wno-macro-redefined", "-Wno-ignored-attributes", "-Wno-deprecated-non-prototype", "-Wno-c++11-narrowing")
+$CFlags = @("-c", "-std=c11", "-ferror-limit=5", "-Wno-deprecated-non-prototype", "-I", (Join-Path $ClientDir "lib\libjpeg\jpeg-6b"))
 
-# --- Protocol headers (existing headers, new driver) ---
-$code = Invoke-Emcc -Log (Join-Path $Proof "protocol_check-build.txt") -EmccArgs @(
-    (Join-Path $Port "browser\protocol_check.cpp"),
-    "-I", (Join-Path $Client "src"),
-    "-o", (Join-Path $Out "protocol_check.js"),
-    "-sENVIRONMENT=node"
-)
-if ($code -ne 0) { throw "protocol_check failed: $code" }
-node (Join-Path $Out "protocol_check.js")
-"protocol_check exit=$LASTEXITCODE" | Tee-Object -FilePath (Join-Path $Proof "protocol_check-run.txt")
+if (Test-Path $SourcesList) {
+    $sources = Get-Content $SourcesList | Where-Object { $_.Trim() -ne "" }
+    Write-Host "Checking $($sources.Count) source files..." -ForegroundColor Cyan
+    $compiled = 0
+    foreach ($rel in $sources) {
+        $flat = ($rel -replace '[\\/]', '_') -replace '\.cpp$', '.o' -replace '\.c$', '.o'
+        $destObj = Join-Path $ObjDir $flat
+        $srcFile = Join-Path $ClientDir $rel
 
-# --- libjpeg 6b, the smallest existing C subset ---
-$jpegDir = Join-Path $Client "lib\libjpeg\jpeg-6b"
-$jpegSources = @(
-    "jcapimin.c","jcapistd.c","jccoefct.c","jccolor.c","jcdctmgr.c","jchuff.c",
-    "jcinit.c","jcmainct.c","jcmarker.c","jcmaster.c","jcomapi.c","jcparam.c",
-    "jcphuff.c","jcprepct.c","jcsample.c","jctrans.c","jdapimin.c","jdapistd.c",
-    "jdatadst.c","jdatasrc.c","jdcoefct.c","jdcolor.c","jddctmgr.c","jdhuff.c",
-    "jdinput.c","jdmainct.c","jdmarker.c","jdmaster.c","jdmerge.c","jdphuff.c",
-    "jdpostct.c","jdsample.c","jdtrans.c","jerror.c","jfdctflt.c","jfdctfst.c",
-    "jfdctint.c","jidctflt.c","jidctfst.c","jidctint.c","jidctred.c","jquant1.c",
-    "jquant2.c","jutils.c","jmemmgr.c","jmemansi.c"
-) | ForEach-Object { Join-Path $jpegDir $_ }
+        if ($RecompileAll -or (-not (Test-Path $destObj)) -or ((Get-Item $srcFile).LastWriteTime -gt (Get-Item $destObj).LastWriteTime)) {
+            Write-Host "  Compiling: $rel"
+            if ($rel.EndsWith(".c")) {
+                & emcc @CFlags $srcFile -o $destObj
+            } else {
+                & emcc @CxxFlags @Includes $srcFile -o $destObj
+            }
+            if ($LASTEXITCODE -ne 0) {
+                Write-Error "Compilation failed for $rel"
+                exit 1
+            }
+            $compiled++
+        }
+    }
+    if ($compiled -gt 0) {
+        Write-Host "Compiled $compiled file(s)." -ForegroundColor Green
+    } else {
+        Write-Host "All object files up to date." -ForegroundColor Green
+    }
+}
 
-$code = Invoke-Emcc -Log (Join-Path $Proof "jpeg_roundtrip-build.txt") -EmccArgs (
-    @((Join-Path $Port "browser\jpeg_roundtrip.cpp")) + $jpegSources + @(
-        "-I", $jpegDir,
-        "-o", (Join-Path $Out "jpeg_roundtrip.js"),
-        "-sENVIRONMENT=node",
-        "-Wno-deprecated-non-prototype",
-        "-Wno-shift-negative-value"
-    )
-)
-if ($code -ne 0) { throw "jpeg_roundtrip failed: $code" }
-node (Join-Path $Out "jpeg_roundtrip.js") | Tee-Object -FilePath (Join-Path $Proof "jpeg_roundtrip-run.txt")
-if ($LASTEXITCODE -ne 0) { throw "jpeg_roundtrip run failed: $LASTEXITCODE" }
+# --- 4. Generate Object List for Linker ---
+$objFiles = Get-ChildItem -Path $ObjDir -Filter "*.o"
+if ($objFiles.Count -eq 0) {
+    Write-Error "No object files found in $ObjDir to link!"
+    exit 1
+}
 
-# --- WebGL 2 canvas ---
-$code = Invoke-Emcc -Log (Join-Path $Proof "webgl2_smoke-build.txt") -EmccArgs @(
-    (Join-Path $Port "browser\webgl2_smoke.cpp"),
-    "-o", (Join-Path $Out "webgl2_smoke.html"),
-    "--shell-file", (Join-Path $Port "browser\shell.html"),
+$objsTxt = Join-Path $ProofDir "login-objs.txt"
+$objPaths = $objFiles | ForEach-Object { $_.FullName.Replace('\', '/') }
+[IO.File]::WriteAllLines($objsTxt, $objPaths)
+
+# --- 5. Link WebAssembly Client ---
+Write-Host "Linking WebAssembly client ($($objFiles.Count) objects)..." -ForegroundColor Cyan
+
+$shellHtml = Join-Path $ClientDir "browser\shell.html"
+$shellLoginCpp = Join-Path $ClientDir "browser\shell_login.cpp"
+$netWsCpp = Join-Path $ClientDir "browser\net_ws.cpp"
+$outHtml = Join-Path $OutDir "shell_login.html"
+
+$linkArgs = @(
+    "-std=c++17",
+    "-ferror-limit=30",
+    "-sDEFAULT_TO_CXX",
+    "-Wno-macro-redefined",
+    "-Wno-ignored-attributes",
+    "-Wno-deprecated-non-prototype",
+    "-Wno-c++11-narrowing"
+) + $Includes + @(
+    $shellLoginCpp,
+    $netWsCpp,
+    "@$objsTxt",
+    "-o", $outHtml,
+    "--shell-file", $shellHtml,
+    "--profiling-funcs",
+    "-sLEGACY_GL_EMULATION",
+    "-sGL_FFP_ONLY",
     "-sMIN_WEBGL_VERSION=2",
     "-sMAX_WEBGL_VERSION=2",
-    "-sENVIRONMENT=web"
+    "-sINITIAL_MEMORY=536870912",
+    "-sSTACK_SIZE=8388608",
+    "-sFORCE_FILESYSTEM=1",
+    "-sALLOW_MEMORY_GROWTH=0",
+    "-sEXPORTED_RUNTIME_METHODS=HEAPU8",
+    "--preload-file", "$DataDir@/Data",
+    "--preload-file", "$ConfigFile@/config.ini",
+    "-Wl,--error-limit=0"
 )
-if ($code -ne 0) { throw "webgl2_smoke failed: $code" }
 
-# --- SEH is expected to fail ---
-Invoke-Emcc -Log (Join-Path $Proof "seh_probe-build.txt") -EmccArgs @(
-    (Join-Path $Port "browser\seh_probe.cpp"),
-    "-o", (Join-Path $Out "seh_probe.js"),
-    "-sENVIRONMENT=node"
-) | Out-Null
+& emcc @linkArgs
+if ($LASTEXITCODE -ne 0) {
+    Write-Error "Link failed!"
+    exit 1
+}
+Write-Host "Link successful." -ForegroundColor Green
 
-# --- Existing client translation units. These are expected to fail. ---
-$includes = @(
-    "-I", (Join-Path $Client "src"),
-    "-I", $jpegDir,
-    "-I", (Join-Path $Client "lib\miniaudio")
-)
-$units = @(
-    "src\Math\Math_3D.cpp",
-    "src\Render\GL_State.cpp",
-    "src\Render\BMD_DrawMesh.cpp",
-    "src\Net\PacketFrame.cpp",
-    "src\Net\Protocol\Protocol_Check.cpp",
-    "src\Core\Window.cpp"
-)
-foreach ($unit in $units) {
-    $name = [IO.Path]::GetFileNameWithoutExtension($unit)
-    $src = Join-Path $Client $unit
-    Invoke-Emcc -Log (Join-Path $Proof "$name-build.txt") -EmccArgs (
-        @("-c", $src, "-std=c++17") + $includes + @("-o", (Join-Path $Out "$name.o"))
-    ) | Out-Null
+# --- 6. Patch Output HTML/JS ---
+$patchScript = Join-Path $ClientDir "patch-login-page.ps1"
+if (Test-Path $patchScript) {
+    Write-Host "Applying WebGL patches..." -ForegroundColor Cyan
+    & powershell -NoProfile -File $patchScript -Token login100
+    if ($LASTEXITCODE -ne 0) {
+        Write-Error "Patching failed!"
+        exit 1
+    }
 }
 
-Write-Host "BUILD_OK out=$Out"
+# --- 7. Deploy to web/ ---
+Write-Host "Deploying build artifacts to web/..." -ForegroundColor Cyan
+Copy-Item (Join-Path $OutDir "shell_login.wasm") (Join-Path $WebDir "shell_login.wasm") -Force
+Copy-Item (Join-Path $OutDir "shell_login.js") (Join-Path $WebDir "shell_login.js") -Force
+Copy-Item (Join-Path $OutDir "shell_login.data") (Join-Path $WebDir "shell_login.data") -Force
+Copy-Item (Join-Path $OutDir "shell_login.html") (Join-Path $WebDir "index.html") -Force
+
+Write-Host "Build complete! All artifacts deployed to web/." -ForegroundColor Green

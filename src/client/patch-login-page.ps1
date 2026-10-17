@@ -1,7 +1,10 @@
 param([string]$Token = "login23")
 $ErrorActionPreference = "Stop"
-$js = "c:\Work\_Projects\mu_online_game\emscripten_port\out\shell_login.js"
-$html = "c:\Work\_Projects\mu_online_game\emscripten_port\out\shell_login.html"
+
+$ClientDir = $PSScriptRoot
+$outDir = Join-Path $ClientDir "out"
+$js = Join-Path $outDir "shell_login.js"
+$html = Join-Path $outDir "shell_login.html"
 
 function Replace-Once([string]$path, [string]$old, [string]$new) {
     $text = [IO.File]::ReadAllText($path).Replace("`r`n", "`n").Replace("`r", "`n")
@@ -272,6 +275,8 @@ Replace-Once $html "      canvas { background: #000; display: block; margin-top:
 Replace-Once $html "      var Module = {" @"
       window.onerror = function (msg, src, line, col, err) {
         logElement.textContent += 'ONERR ' + msg + '\n' + (err && err.stack ? err.stack : '') + '\n';
+        var mErr = document.getElementById('muStatusMsg');
+        if (mErr) { mErr.style.color = '#ef4444'; mErr.textContent = 'Loading error. Please refresh the page.'; }
       };
       var Module = {
 "@

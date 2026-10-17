@@ -731,7 +731,7 @@ void CObjectManager::CharacterGameCloseSet(int aIndex, int type)
 		}
 	}
 
-	lpObj->CloseCount = 6;
+	lpObj->CloseCount = 1;
 
 	lpObj->CloseType = ((type > 2) ? 0 : type);
 

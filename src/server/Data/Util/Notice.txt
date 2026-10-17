@@ -9,6 +9,6 @@
 //=============================================================================================================================================
 
 //Message					Type	RepeatTime
-"Welcome to MuLinux!"				0	600
+"Welcome to Mu Online Solo Classic!"		0	600
 "Enjoy your stay!"				1	600
 end

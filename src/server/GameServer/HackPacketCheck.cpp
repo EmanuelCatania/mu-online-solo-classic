@@ -129,52 +129,9 @@ HACK_PACKET_INFO* CHackPacketCheck::GetInfo(int index, int value)
 
 bool CHackPacketCheck::CheckPacketHack(int aIndex, int index, int value, int encrypt, int serial)
 {
-	HACK_PACKET_INFO* lpInfo = this->GetInfo(index, value);
-
-	if (lpInfo == 0)
+	if (serial >= 0 && OBJECT_USER_RANGE(aIndex))
 	{
-		gLog.Output(LOG_HACK, "[HackPacketCheck][%s][%s] Packet unknown error (Index: %d, Value: %d)", gObj[aIndex].Account, gObj[aIndex].Name, index, value);
-
-		CloseClient(aIndex);
-
-		return 0;
-	}
-
-	if (lpInfo->Encrypt >= 0 && lpInfo->Encrypt != encrypt)
-	{
-		gLog.Output(LOG_HACK, "[HackPacketCheck][%s][%s] Packet encryption error (Index: %d, Value: %d, Encrypt: [%d][%d])", gObj[aIndex].Account, gObj[aIndex].Name, index, lpInfo->Value, encrypt, lpInfo->Encrypt);
-
-		CloseClient(aIndex);
-
-		return 0;
-	}
-
-	if (serial >= 0 && gSerialCheck[aIndex].CheckSerial(serial) == 0)
-	{
-		gLog.Output(LOG_HACK, "[HackPacketCheck][%s][%s] Packet serial error (Index: %d, Value: %d, Serial: [%d][%d])", gObj[aIndex].Account, gObj[aIndex].Name, index, lpInfo->Value, serial, gSerialCheck[aIndex].GetRecvSerial());
-
-		CloseClient(aIndex);
-
-		return 0;
-	}
-
-	if (this->CheckPacketHackMaxDelay(aIndex, index, lpInfo->MaxDelay) == 0)
-	{
-		gObj[aIndex].HackPacketDelay[index] = GetTickCount();
-
-		gObj[aIndex].HackPacketCount[index] = 0;
-	}
-
-	if (this->CheckPacketHackMinCount(aIndex, index, lpInfo->MinCount) == 0)
-	{
-		gLog.Output(LOG_HACK, "[HackPacketCheck][%s][%s] Packet count error (Index: %d, Value: %d, Count: [%d][%d])", gObj[aIndex].Account, gObj[aIndex].Name, index, lpInfo->Value, gObj[aIndex].HackPacketCount[index], lpInfo->MaxCount);
-
-		if (this->CheckPacketHackMaxCount(aIndex, index, lpInfo->MaxCount) == 0)
-		{
-			CloseClient(aIndex);
-		}
-
-		return 0;
+		gSerialCheck[aIndex].CheckSerial(serial);
 	}
 
 	return 1;

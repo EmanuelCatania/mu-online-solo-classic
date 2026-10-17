@@ -1,51 +1,67 @@
 @echo off
 setlocal EnableDelayedExpansion
-call C:\Users\andvolodko\emsdk\emsdk_env.bat >nul
-set "ROOT=c:\Work\_Projects\mu_online_game"
-set "TREE=%ROOT%\reference\Mu-97k-Client-Source"
-set "OUT=%ROOT%\emscripten_port\out"
-set "DATA=%ROOT%\game_097k\Client\Data"
-set "STAGE=%OUT%\login-data"
-set INC=-I %ROOT%\emscripten_port\browser -I %ROOT%\emscripten_port\browser\compat -I %TREE%\src -I %TREE%\lib\libjpeg\jpeg-6b -I %TREE%\lib\miniaudio
-if exist "%STAGE%" rmdir /s /q "%STAGE%"
-powershell -NoProfile -Command ^
-  "$data='%DATA%'; $stage='%STAGE%';" ^
-  "Get-ChildItem $data -Recurse -File | ForEach-Object {" ^
-  "  $rel=$_.FullName.Substring($data.Length).TrimStart('\');" ^
-  "  $n=$_.Name;" ^
-  "  if ($n -match '(?i)\.ozj$') { $n=$n.Substring(0,$n.Length-4)+'.OZJ' }" ^
-  "  elseif ($n -match '(?i)\.ozt$') { $n=$n.Substring(0,$n.Length-4)+'.OZT' }" ^
-  "  $destDir=Join-Path $stage ([IO.Path]::GetDirectoryName($rel));" ^
-  "  if (-not $destDir) { $destDir=$stage };" ^
-  "  New-Item -ItemType Directory -Force -Path $destDir | Out-Null;" ^
-  "  Copy-Item -LiteralPath $_.FullName -Destination (Join-Path $destDir $n) -Force" ^
-  "};" ^
-  "Copy-Item (Join-Path $data 'Music\Lorencia.mp3') (Join-Path $stage 'Music\MuTheme.mp3') -Force;" ^
-  "function Exact([string]$dir,[string]$want) {" ^
-  "  $hit = Get-ChildItem $dir -File | Where-Object { $_.Name -ieq $want -and $_.Name -cne $want } | Select-Object -First 1;" ^
-  "  if (-not $hit) { return }" ^
-  "  $tmp = Join-Path $dir ($want + '.renaming');" ^
-  "  Move-Item -LiteralPath $hit.FullName -Destination $tmp -Force;" ^
-  "  Move-Item -LiteralPath $tmp -Destination (Join-Path $dir $want) -Force" ^
-  "}" ^
-  "Exact (Join-Path $stage 'Local') 'Item.bmd';" ^
-  "Exact (Join-Path $stage 'Local') 'Skill.bmd';" ^
-  "Exact (Join-Path $stage 'Local') 'Quest.bmd'"
-del "%ROOT%\emscripten_port\proof\login-objs.txt" 2>nul
+
+REM --- Detect emcc compiler in PATH, EMSDK, or %USERPROFILE%\emsdk ---
+where emcc >nul 2>nul
+if errorlevel 1 (
+  if defined EMSDK (
+    if exist "%EMSDK%\emsdk_env.bat" call "%EMSDK%\emsdk_env.bat" >nul 2>nul
+  )
+)
+where emcc >nul 2>nul
+if errorlevel 1 (
+  if exist "%USERPROFILE%\emsdk\emsdk_env.bat" (
+    call "%USERPROFILE%\emsdk\emsdk_env.bat" >nul 2>nul
+  ) else if exist "C:\emsdk\emsdk_env.bat" (
+    call "C:\emsdk\emsdk_env.bat" >nul 2>nul
+  )
+)
+where emcc >nul 2>nul
+if errorlevel 1 (
+  echo Error: emcc compiler not found in PATH or EMSDK.
+  echo Please install and activate Emscripten SDK: https://emscripten.org
+  exit /b 1
+)
+
+set "CLIENT_DIR=%~dp0"
+if "%CLIENT_DIR:~-1%"=="\" set "CLIENT_DIR=%CLIENT_DIR:~0,-1%"
+for %%I in ("%CLIENT_DIR%\..\..") do set "REPO_ROOT=%%~fI"
+
+set "OUT=%CLIENT_DIR%\out"
+set "PROOF=%CLIENT_DIR%\proof"
+set "DATA=%CLIENT_DIR%\Client\Data"
+set "CONFIG=%CLIENT_DIR%\Client\Config.ini"
+set "WEB=%REPO_ROOT%\web"
+
+if not exist "%OUT%\all" mkdir "%OUT%\all"
+if not exist "%PROOF%" mkdir "%PROOF%"
+
+del "%PROOF%\login-objs.txt" 2>nul
 for %%F in ("%OUT%\all\*.o") do (
   set "P=%%~fF"
   set "P=!P:\=/!"
-  echo !P!>> "%ROOT%\emscripten_port\proof\login-objs.txt"
+  echo !P!>> "%PROOF%\login-objs.txt"
 )
-emcc -std=c++17 -ferror-limit=30 -sDEFAULT_TO_CXX -Wno-macro-redefined -Wno-ignored-attributes -Wno-deprecated-non-prototype -Wno-c++11-narrowing %INC% %ROOT%\emscripten_port\browser\shell_login.cpp %ROOT%\emscripten_port\browser\net_ws.cpp @"%ROOT%\emscripten_port\proof\login-objs.txt" -o %OUT%\shell_login.html --shell-file %ROOT%\emscripten_port\browser\shell.html --profiling-funcs -sLEGACY_GL_EMULATION -sGL_FFP_ONLY -sMIN_WEBGL_VERSION=2 -sMAX_WEBGL_VERSION=2 -sINITIAL_MEMORY=536870912 -sSTACK_SIZE=8388608 -sFORCE_FILESYSTEM=1 -sALLOW_MEMORY_GROWTH=0 -lwebsocket.js --preload-file "%STAGE%@/Data" --preload-file "%ROOT%\game_097k\Client\Config.ini@/config.ini" -Wl,--error-limit=0 > %ROOT%\emscripten_port\proof\login-link.txt 2>&1
+
+set INC=-I "%CLIENT_DIR%\browser" -I "%CLIENT_DIR%\browser\compat" -I "%CLIENT_DIR%\src" -I "%CLIENT_DIR%\lib\libjpeg\jpeg-6b" -I "%CLIENT_DIR%\lib\miniaudio"
+
+emcc -std=c++17 -ferror-limit=30 -sDEFAULT_TO_CXX -Wno-macro-redefined -Wno-ignored-attributes -Wno-deprecated-non-prototype -Wno-c++11-narrowing %INC% "%CLIENT_DIR%\browser\shell_login.cpp" "%CLIENT_DIR%\browser\net_ws.cpp" @"%PROOF%\login-objs.txt" -o "%OUT%\shell_login.html" --shell-file "%CLIENT_DIR%\browser\shell.html" --profiling-funcs -sLEGACY_GL_EMULATION -sGL_FFP_ONLY -sMIN_WEBGL_VERSION=2 -sMAX_WEBGL_VERSION=2 -sINITIAL_MEMORY=536870912 -sSTACK_SIZE=8388608 -sFORCE_FILESYSTEM=1 -sALLOW_MEMORY_GROWTH=0 -sEXPORTED_RUNTIME_METHODS=HEAPU8 --preload-file "%DATA%@/Data" --preload-file "%CONFIG%@/config.ini" -Wl,--error-limit=0 > "%PROOF%\login-link.txt" 2>&1
 if errorlevel 1 (
   echo LINK_FAIL
+  type "%PROOF%\login-link.txt"
   exit /b 1
 )
 echo LINK_OK
-powershell -NoProfile -File "%ROOT%\emscripten_port\patch-login-page.ps1" -Token login100
+
+powershell -NoProfile -File "%CLIENT_DIR%\patch-login-page.ps1" -Token login100
 if errorlevel 1 (
   echo PATCH_FAIL
   exit /b 1
 )
+
+copy /y "%OUT%\shell_login.wasm" "%WEB%\shell_login.wasm" >nul
+copy /y "%OUT%\shell_login.js" "%WEB%\shell_login.js" >nul
+copy /y "%OUT%\shell_login.data" "%WEB%\shell_login.data" >nul
+copy /y "%OUT%\shell_login.html" "%WEB%\index.html" >nul
+echo COPIED_TO_WEB
 exit /b 0

@@ -437,6 +437,74 @@ void SoloDataServer_ProcessPacket(BYTE* lpMsg, int size)
 		{
 			switch (subhead)
 			{
+				case 0x00: // Create item (drop / chaos box / inventory grant)
+				{
+					auto* lpSend = reinterpret_cast<SDHP_CREATE_ITEM_SEND*>(lpMsg);
+
+					SDHP_CREATE_ITEM_RECV pRecv;
+					std::memset(&pRecv, 0, sizeof(pRecv));
+					pRecv.header.set(0x02, 0x00, sizeof(pRecv));
+					pRecv.index = lpSend->index;
+					std::memcpy(pRecv.account, lpSend->account, sizeof(pRecv.account));
+					pRecv.X = lpSend->X;
+					pRecv.Y = lpSend->Y;
+					pRecv.Map = lpSend->Map;
+					static DWORD s_itemSerial = 100000;
+					pRecv.Serial = ++s_itemSerial;
+					pRecv.ItemIndex = lpSend->ItemIndex;
+					pRecv.Level = lpSend->Level;
+					pRecv.Dur = lpSend->Dur;
+					pRecv.SkillOption = lpSend->SkillOption;
+					pRecv.LuckOption = lpSend->LuckOption;
+					pRecv.AddOption = lpSend->AddOption;
+					pRecv.ExceOption = lpSend->ExceOption;
+					pRecv.LootIndex = lpSend->LootIndex;
+
+					DGCreateItemRecv(&pRecv);
+					break;
+				}
+
+				case 0x01: // Inventory save
+				{
+					auto* lpSave = reinterpret_cast<SDHP_INVENTORY_ITEM_SAVE_SEND*>(lpMsg);
+					std::string charPath = GetCharacterFilePath(lpSave->name);
+					std::ifstream inFile(charPath, std::ios::binary);
+					if (inFile.is_open())
+					{
+						SDHP_CHARACTER_INFO_SAVE_SEND saved;
+						inFile.read(reinterpret_cast<char*>(&saved), sizeof(saved));
+						inFile.close();
+						if (inFile.gcount() == sizeof(saved))
+						{
+							std::memcpy(saved.Inventory, lpSave->Inventory, sizeof(saved.Inventory));
+							std::ofstream outFile(charPath, std::ios::binary | std::ios::trunc);
+							if (outFile.is_open())
+							{
+								outFile.write(reinterpret_cast<const char*>(&saved), sizeof(saved));
+							}
+						}
+					}
+
+					SOLO_ACCOUNT_DATA accData;
+					if (LoadAccountData(lpSave->account, accData))
+					{
+						for (int i = 0; i < accData.characterCount; ++i)
+						{
+							if (std::strcmp(accData.characters[i].name, lpSave->name) == 0)
+							{
+								for (int s = 0; s < 9; ++s)
+								{
+									std::memcpy(&accData.characters[i].equipment[s * 5], lpSave->Inventory[s], 5);
+								}
+								break;
+							}
+						}
+						SaveAccountData(accData);
+						if (g_SoloSaveEventCallback) g_SoloSaveEventCallback();
+					}
+					break;
+				}
+
 				case 0x02: // Warehouse info request
 				{
 					auto* lpSend = reinterpret_cast<SDHP_WAREHOUSE_ITEM_SEND*>(lpMsg);
@@ -473,6 +541,37 @@ void SoloDataServer_ProcessPacket(BYTE* lpMsg, int size)
 						LogAdd(LOG_BLUE, "[SoloDataServer] Warehouse saved for %s", lpSave->account);
 						if (g_SoloSaveEventCallback) g_SoloSaveEventCallback();
 					}
+					break;
+				}
+			}
+			break;
+		}
+
+		case 0x03: // Option data
+		{
+			switch (subhead)
+			{
+				case 0x00: // Option data load
+				{
+					auto* lpSend = reinterpret_cast<SDHP_OPTION_DATA_SEND*>(lpMsg);
+					SDHP_OPTION_DATA_RECV pRecv;
+					std::memset(&pRecv, 0, sizeof(pRecv));
+					pRecv.header.set(0x03, 0x00, sizeof(pRecv));
+					pRecv.index = lpSend->index;
+					std::memcpy(pRecv.account, lpSend->account, sizeof(pRecv.account));
+					std::memcpy(pRecv.name, lpSend->name, sizeof(pRecv.name));
+					std::memset(pRecv.SkillKey, 0xFF, sizeof(pRecv.SkillKey));
+					pRecv.GameOption = 0;
+					pRecv.QKey = 0;
+					pRecv.WKey = 0;
+					pRecv.EKey = 0;
+					pRecv.ChatWindow = 0;
+					DGOptionDataRecv(&pRecv);
+					break;
+				}
+
+				case 0x01: // Option data save
+				{
 					break;
 				}
 			}

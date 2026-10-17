@@ -1,23 +1,20 @@
-// Browser socket for M4. Game packets stay in the C++ client.
-// This file only moves the bytes the client already sends and receives.
+// Browser in-memory transport bridge for MU Online Solo Classic (0.97k).
+// Replaces external WebSocket network calls with a direct in-memory message channel
+// connecting client WebAssembly engine to in-browser GameServer Web Worker.
 
 #include <emscripten/emscripten.h>
-#include <emscripten/websocket.h>
 
 #include "stdafx.h"
 #include "Net/Network.h"
+#include "Net/MuEmu.h"
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-static EMSCRIPTEN_WEBSOCKET_T g_ws = 0;
 static int g_open = 0;
 static int g_err = 0;
-static char g_host[128];
-// The content catalog arrives as one TCP burst before F1/01. The game
-// reads at most 8 KB per FD_READ, so a single 64 KB socket buffer dropped
-// the tail, including the login result, and the panel waited forever.
+static char g_host[128] = "127.0.0.1";
 static unsigned char* g_in = 0;
 static int g_in_cap = 0;
 static int g_in_len = 0;
@@ -33,19 +30,10 @@ static void post_event(unsigned evt) {
     gNetwork.OnSocketEvent((WORD)evt, 0);
 }
 
-static bool on_open(int, const EmscriptenWebSocketOpenEvent*, void*) {
-    g_open = 1;
-    g_err = 0;
-    printf("M4 ws open host=%s\n", g_host);
-    fflush(stdout);
-    post_event(FD_WRITE);
-    return true;
-}
-
 static int append_in(const unsigned char* data, int n) {
     if (n <= 0) return 1;
     if (g_in_len > 0x4000000 || n > 0x4000000) {
-        printf("M4 recv overflow\n");
+        printf("SOLO: recv overflow\n");
         fflush(stdout);
         return 0;
     }
@@ -60,7 +48,7 @@ static int append_in(const unsigned char* data, int n) {
         }
         unsigned char* grown = (unsigned char*)realloc(g_in, (size_t)cap);
         if (!grown) {
-            printf("M4 recv overflow\n");
+            printf("SOLO: recv overflow\n");
             fflush(stdout);
             return 0;
         }
@@ -82,28 +70,26 @@ static void drain_in() {
     }
 }
 
-static bool on_message(int, const EmscriptenWebSocketMessageEvent* ev, void*) {
-    if (!ev || ev->socket != g_ws || ev->isText || !ev->data || ev->numBytes == 0) return true;
-    if (!append_in(ev->data, (int)ev->numBytes)) return true;
-    drain_in();
-    return true;
+static unsigned char g_push_buf[65536];
+
+// Function callable from JS to get buffer pointer for incoming packets
+extern "C" EMSCRIPTEN_KEEPALIVE unsigned char* mu_net_get_push_buffer(void) {
+    return g_push_buf;
 }
 
-static bool on_close(int, const EmscriptenWebSocketCloseEvent* ev, void*) {
-    if (!ev || ev->socket != g_ws) return true;
-    g_open = 0;
-    g_ws = 0;
-    printf("M4 ws close\n");
-    fflush(stdout);
-    post_event(FD_CLOSE);
-    return true;
+// Function callable from JS to push incoming packets from server_worker
+extern "C" EMSCRIPTEN_KEEPALIVE void mu_net_push_packet(int len) {
+    if (len > 0 && len <= (int)sizeof(g_push_buf)) {
+        append_in(g_push_buf, len);
+        drain_in();
+    }
 }
 
-static bool on_error(int, const EmscriptenWebSocketErrorEvent*, void*) {
-    g_err = 10061;
-    printf("M4 ws error\n");
-    fflush(stdout);
-    return true;
+extern "C" EMSCRIPTEN_KEEPALIVE void mu_net_push_bytes(const unsigned char* data, int len) {
+    if (data && len > 0) {
+        append_in(data, len);
+        drain_in();
+    }
 }
 
 extern "C" int mu_net_last_error(void) { return g_err; }
@@ -157,82 +143,63 @@ extern "C" int mu_net_async_select(SOCKET, HWND, unsigned, long) {
 }
 
 extern "C" int mu_net_connect(SOCKET, const void* addr, int len) {
-    if (!addr || len < (int)sizeof(sockaddr_in)) {
-        g_err = 10022;
-        return -1;
-    }
-    const sockaddr_in* sa = (const sockaddr_in*)addr;
-    unsigned short port = (unsigned short)((sa->sin_port << 8) | (sa->sin_port >> 8));
-    if (!g_host[0]) strncpy(g_host, "127.0.0.1", sizeof(g_host) - 1);
-
-    if (g_ws) {
-        EMSCRIPTEN_WEBSOCKET_T old = g_ws;
-        g_ws = 0;
-        g_open = 0;
-        emscripten_websocket_close(old, 1000, "switch");
-        emscripten_websocket_delete(old);
-    }
     g_open = 0;
     g_in_len = 0;
+    g_err = 0;
+    MuEmu::SetActive(false);
 
-    char url[256];
-    char pageHost[128] = {};
-    // The browser opens the gateway on whatever host served the page, so a
-    // phone on the LAN reaches this machine. The query host stays 127.0.0.1:
-    // the gateway dials the game servers on this PC, not the public address.
-    EM_ASM({
-        var h = (typeof location !== "undefined" && location.hostname) ? location.hostname : "";
-        if (!h || h.length > 120) h = "127.0.0.1";
-        stringToUTF8(h, $0, 128);
-    }, pageHost);
-    if (!pageHost[0]) strncpy(pageHost, "127.0.0.1", sizeof(pageHost) - 1);
-    snprintf(url, sizeof(url), "ws://%s:8091/?host=127.0.0.1&port=%u", pageHost, (unsigned)port);
-    printf("M4 connect %s asked=%s\n", url, g_host);
+    int realmMode = (int)ServerSelectHi;
+    if (realmMode < 0 || realmMode > 2) realmMode = 0;
+
+    printf("SOLO: in-memory bridge connect realm=%d\n", realmMode);
     fflush(stdout);
 
-    EmscriptenWebSocketCreateAttributes attr;
-    emscripten_websocket_init_create_attributes(&attr);
-    attr.url = url;
-    attr.createOnMainThread = true;
-    g_ws = emscripten_websocket_new(&attr);
-    if (g_ws <= 0) {
-        g_err = 10061;
-        g_ws = 0;
-        return -1;
-    }
-    emscripten_websocket_set_onopen_callback(g_ws, 0, on_open);
-    emscripten_websocket_set_onmessage_callback(g_ws, 0, on_message);
-    emscripten_websocket_set_onclose_callback(g_ws, 0, on_close);
-    emscripten_websocket_set_onerror_callback(g_ws, 0, on_error);
-    g_err = WSAEWOULDBLOCK;
-    return -1;
+    EM_ASM({
+        Module['HEAPU8'] = HEAPU8;
+        if (typeof window !== 'undefined') {
+            window['HEAPU8'] = HEAPU8;
+        }
+        if (typeof window !== 'undefined' && window.soloBridge && window.soloBridge.connect) {
+            window.soloBridge.connect($0);
+        }
+    }, realmMode);
+
+    g_open = 1;
+    post_event(FD_WRITE);
+    return 0;
 }
 
 extern "C" int mu_net_closesocket(SOCKET) {
-    if (g_ws) {
-        EMSCRIPTEN_WEBSOCKET_T old = g_ws;
-        g_ws = 0;
-        emscripten_websocket_close(old, 1000, "close");
-        emscripten_websocket_delete(old);
+    if (g_open) {
+        EM_ASM({
+            if (typeof window !== 'undefined' && window.soloBridge && window.soloBridge.disconnect) {
+                window.soloBridge.disconnect();
+            }
+        });
     }
     g_open = 0;
     g_in_len = 0;
     g_err = 0;
+    post_event(FD_CLOSE);
     return 0;
 }
 
 extern "C" int mu_net_send(SOCKET, const char* buf, int len, int) {
-    if (!g_open || g_ws <= 0) {
+    if (!g_open) {
         g_err = WSAEWOULDBLOCK;
         return -1;
     }
     if (len <= 0) return 0;
-    if (emscripten_websocket_send_binary(g_ws, (void*)buf, (uint32_t)len) != EMSCRIPTEN_RESULT_SUCCESS) {
-        g_err = 10054;
-        return -1;
-    }
+
+    EM_ASM({
+        if (typeof window !== 'undefined' && window.soloBridge && window.soloBridge.send) {
+            var data = new Uint8Array(HEAPU8.subarray($0, $0 + $1));
+            window.soloBridge.send(data);
+        }
+    }, buf, len);
+
     if (g_sends < 8) {
-        printf("M4 send %d\n", len);
+        printf("SOLO: client sent %d bytes\n", len);
         fflush(stdout);
     }
     g_sends++;

@@ -1,1255 +1,879 @@
-<!DOCTYPE html>
-<html lang="uk">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MU Online Classic (0.97k) - Solo WebAssembly Server</title>
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+    <title>MU Online Solo Classic</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700;900&family=JetBrains+Mono:wght@400;500;700&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700;900&display=swap" rel="stylesheet">
     <style>
-        :root {
-            --bg-base: #0b0f19;
-            --bg-surface: #111827;
-            --bg-elevated: #1e293b;
-            --border-color: rgba(255, 255, 255, 0.08);
-            --border-highlight: rgba(217, 119, 6, 0.35);
-            --primary: #f59e0b;
-            --primary-glow: rgba(245, 158, 11, 0.25);
-            --secondary: #3b82f6;
-            --secondary-glow: rgba(59, 130, 246, 0.25);
-            --accent-green: #10b981;
-            --accent-red: #ef4444;
-            --text-main: #f3f4f6;
-            --text-muted: #94a3b8;
-            --text-dim: #64748b;
-        }
+      body { font-family: sans-serif; background: #111; color: #eee; }
+      html, body { margin: 0; width: 100%; height: 100%; background: #000; overflow: hidden; cursor: default; }
+      #status, #log { display: none; }
+      canvas { background: #000; position: fixed; left: 0; top: 0; z-index: 2; outline: none; border: 0; cursor: none; }
+      canvas:focus, canvas:focus-visible { outline: none !important; }
+      #muKeyBtn, #muKeys, #muStick, #muRBtn { display: none; }
+      @media (pointer: coarse), (max-width: 900px) {
+        #muKeyBtn { display: flex; }
+        #muStick { display: block; }
+        #muRBtn { display: flex; }
+      }
+      #muKeyBtn {
+        position: fixed; right: 10px; top: 42%; z-index: 8;
+        width: 46px; height: 46px; padding: 0; border-radius: 10px;
+        border: 1px solid rgba(255,255,255,.35); background: rgba(20,20,20,.72);
+        color: #eee; align-items: center; justify-content: center;
+        touch-action: none; user-select: none; -webkit-user-select: none;
+      }
+      #muKeyBtn.on { background: rgba(70,70,70,.9); }
+      #muKeys {
+        position: fixed; left: 0; right: 0; bottom: 0; z-index: 7;
+        padding: 6px 4px calc(6px + env(safe-area-inset-bottom));
+        background: rgba(12,12,12,.92); touch-action: none; user-select: none;
+        -webkit-user-select: none; -webkit-touch-callout: none;
+      }
+      #muKeys.on { display: block; }
+      #muKeys .row { display: flex; gap: 3px; margin: 3px 0; }
+      #muKeys button {
+        flex: 1; min-height: 40px; border-radius: 6px; border: 0;
+        background: #3a3a3a; color: #f2f2f2; font: 15px/1 sans-serif;
+        touch-action: none; padding: 0;
+      }
+      #muKeys button.wide { flex: 1.6; }
+      #muKeys button.space { flex: 4; }
+      #muKeys button.lit { background: #6a6a6a; color: #fff; }
+      #muStick {
+        position: fixed; left: max(14px, env(safe-area-inset-left)); top: auto;
+        bottom: max(12px, env(safe-area-inset-bottom));
+        z-index: 6; width: 128px; height: 128px; border-radius: 50%;
+        background: rgba(20,20,20,.35); border: 2px solid rgba(255,255,255,.28);
+        touch-action: none; user-select: none; -webkit-user-select: none;
+      }
+      #muStickKnob {
+        position: absolute; left: 50%; top: 50%; width: 54px; height: 54px;
+        margin: -27px 0 0 -27px; border-radius: 50%;
+        background: rgba(230,230,230,.82); pointer-events: none;
+      }
+      #muRBtn {
+        position: fixed; right: 10px; top: calc(42% + 58px); z-index: 8;
+        width: 64px; height: 64px; padding: 0; border-radius: 50%;
+        border: 1px solid rgba(255,255,255,.35); background: rgba(20,20,20,.72);
+        color: #eee; align-items: center; justify-content: center;
+        touch-action: none; user-select: none; -webkit-user-select: none;
+      }
+      #muRBtn.on { background: rgba(90,40,40,.9); }
+      pre { white-space: pre-wrap; }
 
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
-
-        body {
-            font-family: 'Outfit', -apple-system, sans-serif;
-            background-color: var(--bg-base);
-            color: var(--text-main);
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-            background-image: 
-                radial-gradient(ellipse at 15% 10%, rgba(245, 158, 11, 0.08) 0%, transparent 40%),
-                radial-gradient(ellipse at 85% 90%, rgba(59, 130, 246, 0.08) 0%, transparent 40%);
-            background-attachment: fixed;
-        }
-
-        header {
-            padding: 1.1rem 2rem;
-            border-bottom: 1px solid var(--border-color);
-            background: rgba(17, 24, 39, 0.75);
-            backdrop-filter: blur(12px);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            position: sticky;
-            top: 0;
-            z-index: 50;
-            flex-wrap: wrap;
-            gap: 1rem;
-        }
-
-        .brand {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-        }
-
-        .brand h1 {
-            font-family: 'Cinzel', serif;
-            font-size: 1.45rem;
-            font-weight: 900;
-            letter-spacing: 0.1em;
-            background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 50%, #d97706 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            text-shadow: 0 0 24px var(--primary-glow);
-        }
-
-        .version-badge {
-            background: rgba(245, 158, 11, 0.12);
-            color: #fbbf24;
-            font-size: 0.75rem;
-            font-weight: 600;
-            padding: 0.25rem 0.6rem;
-            border-radius: 9999px;
-            border: 1px solid rgba(245, 158, 11, 0.3);
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-        }
-
-        .header-controls {
-            display: flex;
-            align-items: center;
-            gap: 1.25rem;
-        }
-
-        .save-indicator {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            font-size: 0.8rem;
-            color: var(--text-muted);
-            background: var(--bg-elevated);
-            padding: 0.4rem 0.8rem;
-            border-radius: 6px;
-            border: 1px solid var(--border-color);
-        }
-
-        .server-status {
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-            font-size: 0.875rem;
-            color: var(--text-muted);
-        }
-
-        .status-dot {
-            width: 10px;
-            height: 10px;
-            border-radius: 50%;
-            background-color: var(--accent-red);
-            box-shadow: 0 0 10px var(--accent-red);
-            transition: all 0.3s ease;
-        }
-
-        .status-dot.active {
-            background-color: var(--accent-green);
-            box-shadow: 0 0 12px var(--accent-green);
-        }
-
-        main {
-            flex: 1;
-            padding: 2rem;
-            max-width: 1600px;
-            margin: 0 auto;
-            width: 100%;
-            display: grid;
-            grid-template-columns: 380px 1fr;
-            gap: 1.75rem;
-        }
-
-        @media (max-width: 1024px) {
-            main {
-                grid-template-columns: 1fr;
-            }
-        }
-
-        .sidebar {
-            display: flex;
-            flex-direction: column;
-            gap: 1.5rem;
-        }
-
-        .card {
-            background: var(--bg-surface);
-            border: 1px solid var(--border-color);
-            border-radius: 12px;
-            padding: 1.5rem;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
-            backdrop-filter: blur(8px);
-        }
-
-        .card-title {
-            font-size: 0.85rem;
-            text-transform: uppercase;
-            letter-spacing: 0.08em;
-            color: var(--text-dim);
-            font-weight: 700;
-            margin-bottom: 1.25rem;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .stat-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 1rem;
-        }
-
-        .stat-box {
-            background: var(--bg-elevated);
-            padding: 0.85rem 1rem;
-            border-radius: 8px;
-            border: 1px solid var(--border-color);
-        }
-
-        .stat-label {
-            font-size: 0.75rem;
-            color: var(--text-muted);
-            margin-bottom: 0.25rem;
-        }
-
-        .stat-value {
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 1.3rem;
-            font-weight: 700;
-            color: #f8fafc;
-        }
-
-        .actions-group {
-            display: flex;
-            flex-direction: column;
-            gap: 0.75rem;
-        }
-
-        .btn-row {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 0.5rem;
-        }
-
-        .btn {
-            appearance: none;
-            border: none;
-            outline: none;
-            cursor: pointer;
-            font-family: inherit;
-            font-weight: 600;
-            font-size: 0.85rem;
-            padding: 0.7rem 1.1rem;
-            border-radius: 8px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 0.5rem;
-            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-            user-select: none;
-        }
-
-        .btn-primary {
-            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
-            color: #111827;
-            box-shadow: 0 2px 10px var(--primary-glow);
-        }
-
-        .btn-primary:hover:not(:disabled) {
-            transform: translateY(-1px);
-            box-shadow: 0 4px 16px var(--primary-glow);
-            filter: brightness(1.1);
-        }
-
-        .btn-secondary {
-            background: var(--bg-elevated);
-            color: var(--text-main);
-            border: 1px solid var(--border-color);
-        }
-
-        .btn-secondary:hover:not(:disabled) {
-            background: #273549;
-            border-color: rgba(255, 255, 255, 0.15);
-            transform: translateY(-1px);
-        }
-
-        .btn-success {
-            background: rgba(16, 185, 129, 0.15);
-            color: #34d399;
-            border: 1px solid rgba(16, 185, 129, 0.35);
-        }
-
-        .btn-success:hover:not(:disabled) {
-            background: rgba(16, 185, 129, 0.25);
-            border-color: #34d399;
-            transform: translateY(-1px);
-        }
-
-        .btn-warning {
-            background: rgba(245, 158, 11, 0.15);
-            color: #fbbf24;
-            border: 1px solid rgba(245, 158, 11, 0.35);
-        }
-
-        .btn-warning:hover:not(:disabled) {
-            background: rgba(245, 158, 11, 0.25);
-            border-color: #fbbf24;
-            transform: translateY(-1px);
-        }
-
-        .btn:disabled {
-            opacity: 0.45;
-            cursor: not-allowed;
-            transform: none !important;
-        }
-
-        .content-area {
-            display: flex;
-            flex-direction: column;
-            gap: 1.5rem;
-        }
-
-        .packet-stream {
-            background: var(--bg-surface);
-            border: 1px solid var(--border-color);
-            border-radius: 12px;
-            display: flex;
-            flex-direction: column;
-            height: 380px;
-            overflow: hidden;
-        }
-
-        .panel-header {
-            padding: 0.9rem 1.5rem;
-            border-bottom: 1px solid var(--border-color);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            background: rgba(30, 41, 59, 0.4);
-        }
-
-        .table-container {
-            flex: 1;
-            overflow-y: auto;
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 0.8rem;
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            text-align: left;
-        }
-
-        th {
-            background: rgba(15, 23, 42, 0.8);
-            position: sticky;
-            top: 0;
-            padding: 0.75rem 1rem;
-            color: var(--text-dim);
-            font-size: 0.75rem;
-            font-weight: 600;
-            text-transform: uppercase;
-            border-bottom: 1px solid var(--border-color);
-        }
-
-        td {
-            padding: 0.65rem 1rem;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.04);
-            white-space: nowrap;
-        }
-
-        tr:hover {
-            background: rgba(255, 255, 255, 0.02);
-        }
-
-        .badge-dir {
-            font-size: 0.7rem;
-            font-weight: 700;
-            padding: 0.2rem 0.45rem;
-            border-radius: 4px;
-        }
-
-        .badge-out {
-            background: rgba(16, 185, 129, 0.15);
-            color: #34d399;
-            border: 1px solid rgba(16, 185, 129, 0.3);
-        }
-
-        .badge-in {
-            background: rgba(59, 130, 246, 0.15);
-            color: #60a5fa;
-            border: 1px solid rgba(59, 130, 246, 0.3);
-        }
-
-        .terminal {
-            background: #090d16;
-            border: 1px solid var(--border-color);
-            border-radius: 12px;
-            display: flex;
-            flex-direction: column;
-            height: 320px;
-            overflow: hidden;
-            font-family: 'JetBrains Mono', monospace;
-        }
-
-        .terminal-body {
-            flex: 1;
-            padding: 1rem 1.25rem;
-            overflow-y: auto;
-            font-size: 0.825rem;
-            line-height: 1.6;
-            display: flex;
-            flex-direction: column;
-            gap: 0.25rem;
-        }
-
-        .log-entry {
-            word-break: break-all;
-        }
-
-        .log-time {
-            color: var(--text-dim);
-            margin-right: 0.5rem;
-        }
-
-        .raw-hex {
-            color: #cbd5e1;
-            letter-spacing: 0.05em;
-        }
-
-        .storage-pill {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.35rem;
-            background: rgba(16, 185, 129, 0.1);
-            color: #34d399;
-            padding: 0.15rem 0.5rem;
-            border-radius: 4px;
-            font-size: 0.75rem;
-            font-weight: 600;
-        }
-
-        .realm-bar {
-            display: flex;
-            align-items: center;
-            gap: 0.4rem;
-            background: rgba(15, 23, 42, 0.75);
-            padding: 0.3rem 0.45rem;
-            border-radius: 10px;
-            border: 1px solid var(--border-color);
-        }
-
-        .realm-btn {
-            appearance: none;
-            border: 1px solid transparent;
-            background: transparent;
-            color: var(--text-muted);
-            font-family: inherit;
-            font-size: 0.78rem;
-            font-weight: 700;
-            padding: 0.4rem 0.85rem;
-            border-radius: 6px;
-            cursor: pointer;
-            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-            display: flex;
-            align-items: center;
-            gap: 0.35rem;
-            user-select: none;
-        }
-
-        .realm-btn:hover {
-            color: var(--text-main);
-            background: rgba(255, 255, 255, 0.05);
-        }
-
-        .realm-btn.active-easy {
-            background: rgba(16, 185, 129, 0.2);
-            color: #34d399;
-            border-color: rgba(16, 185, 129, 0.45);
-            box-shadow: 0 0 12px rgba(16, 185, 129, 0.3);
-        }
-
-        .realm-btn.active-medium {
-            background: rgba(245, 158, 11, 0.2);
-            color: #fbbf24;
-            border-color: rgba(245, 158, 11, 0.45);
-            box-shadow: 0 0 12px rgba(245, 158, 11, 0.3);
-        }
-
-        .realm-btn.active-hard {
-            background: rgba(239, 68, 68, 0.2);
-            color: #f87171;
-            border-color: rgba(239, 68, 68, 0.45);
-            box-shadow: 0 0 12px rgba(239, 68, 68, 0.3);
-        }
+      /* === Premium MU Online Classic Preloader === */
+      .mu-preloader {
+        position: fixed; inset: 0; z-index: 9999;
+        display: flex; align-items: center; justify-content: center;
+        background: #08090d;
+        color: #f1f5f9;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        user-select: none; -webkit-user-select: none;
+        transition: opacity 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+      .mu-preloader.fade-out {
+        opacity: 0; pointer-events: none;
+      }
+      .mu-preloader-bg {
+        position: absolute; inset: 0;
+        background: radial-gradient(circle at 50% 40%, rgba(180, 83, 9, 0.22) 0%, rgba(15, 23, 42, 0.8) 55%, #050608 100%);
+        pointer-events: none;
+      }
+      .mu-preloader-glow {
+        position: absolute; width: 440px; height: 440px; border-radius: 50%;
+        background: radial-gradient(circle, rgba(245, 158, 11, 0.16) 0%, transparent 70%);
+        animation: muPulse 4s ease-in-out infinite alternate;
+        pointer-events: none;
+      }
+      @keyframes muPulse {
+        0% { transform: scale(0.9); opacity: 0.6; }
+        100% { transform: scale(1.18); opacity: 1; }
+      }
+      .mu-preloader-card {
+        position: relative; z-index: 1;
+        display: flex; flex-direction: column; align-items: center;
+        width: min(92vw, 460px);
+        padding: 34px 26px 28px;
+        background: rgba(13, 16, 26, 0.82);
+        border: 1px solid rgba(245, 158, 11, 0.35);
+        border-radius: 18px;
+        box-shadow: 0 12px 48px rgba(0, 0, 0, 0.85), 0 0 30px rgba(217, 119, 6, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+        backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+        text-align: center;
+      }
+      .mu-crest-container {
+        width: 86px; height: 86px; margin-bottom: 14px;
+        filter: drop-shadow(0 0 18px rgba(245, 158, 11, 0.55));
+        animation: muCrestFloat 3.5s ease-in-out infinite alternate;
+      }
+      @keyframes muCrestFloat {
+        0% { transform: translateY(0px); }
+        100% { transform: translateY(-5px); }
+      }
+      .mu-crest-svg {
+        width: 100%; height: 100%; display: block;
+      }
+      .mu-preloader-title {
+        margin: 0 0 4px;
+        font-family: 'Cinzel', 'Trajan Pro', 'Palatino Linotype', 'Georgia', serif;
+        font-size: 34px; font-weight: 900; letter-spacing: 6px; line-height: 1.1;
+        background: linear-gradient(180deg, #fffbeb 0%, #fef08a 25%, #f59e0b 65%, #b45309 100%);
+        -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+        filter: drop-shadow(0 2px 8px rgba(0,0,0,0.85)) drop-shadow(0 0 20px rgba(245, 158, 11, 0.45));
+      }
+      .mu-preloader-sub {
+        font-size: 11px; font-weight: 700; letter-spacing: 4px;
+        color: #cbd5e1; text-transform: uppercase;
+        margin-bottom: 24px;
+        text-shadow: 0 0 8px rgba(245, 158, 11, 0.4);
+      }
+      .mu-progress-box {
+        width: 100%; margin-bottom: 18px;
+      }
+      .mu-progress-meta {
+        display: flex; justify-content: space-between; align-items: baseline;
+        font-size: 12px; font-weight: 500; color: #94a3b8;
+        margin-bottom: 8px; padding: 0 2px;
+      }
+      #muStatusMsg {
+        color: #e2e8f0; font-weight: 600; text-overflow: ellipsis; overflow: hidden; white-space: nowrap; max-width: 65%;
+      }
+      #muStatusDetail {
+        color: #f59e0b; font-family: monospace; font-size: 13px; font-weight: 700;
+      }
+      .mu-bar-track {
+        width: 100%; height: 16px;
+        background: rgba(8, 10, 15, 0.95);
+        border: 1px solid rgba(245, 158, 11, 0.45);
+        border-radius: 8px;
+        padding: 2px;
+        box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.9), 0 0 10px rgba(217, 119, 6, 0.2);
+        overflow: hidden;
+      }
+      .mu-bar-fill {
+        height: 100%; width: 2%;
+        border-radius: 5px;
+        background: linear-gradient(90deg, #b45309 0%, #f59e0b 50%, #fef08a 100%);
+        box-shadow: 0 0 12px rgba(245, 158, 11, 0.85);
+        transition: width 0.2s ease-out;
+        position: relative; overflow: hidden;
+      }
+      .mu-bar-light {
+        position: absolute; inset: 0;
+        background: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.5) 50%, transparent 100%);
+        animation: muShimmer 2s infinite linear;
+      }
+      @keyframes muShimmer {
+        0% { transform: translateX(-100%); }
+        100% { transform: translateX(100%); }
+      }
+      .mu-tips-box {
+        display: flex; align-items: center; gap: 8px;
+        width: 100%; min-height: 40px; padding: 8px 12px;
+        background: rgba(15, 23, 42, 0.6);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 8px;
+        font-size: 11.5px; line-height: 1.4; color: #cbd5e1;
+        text-align: left;
+      }
+      .mu-tip-icon { font-size: 14px; flex-shrink: 0; }
+      .mu-tip-msg {
+        flex: 1; transition: opacity 0.3s ease;
+      }
     </style>
-</head>
-<body>
-
-    <header>
-        <div class="brand">
-            <h1>MU Online Solo</h1>
-            <span class="version-badge">Classic 0.97k WASM</span>
+  </head>
+  <body>
+    <!-- Fullscreen MU Preloader -->
+    <div id="muPreloader" class="mu-preloader">
+      <div class="mu-preloader-bg"></div>
+      <div class="mu-preloader-glow"></div>
+      <div class="mu-preloader-card">
+        <div class="mu-crest-container">
+          <svg class="mu-crest-svg" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <linearGradient id="crestGold" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#fffbeb"/>
+                <stop offset="30%" stop-color="#fde047"/>
+                <stop offset="70%" stop-color="#d97706"/>
+                <stop offset="100%" stop-color="#78350f"/>
+              </linearGradient>
+              <linearGradient id="jewelRed" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#f87171"/>
+                <stop offset="50%" stop-color="#dc2626"/>
+                <stop offset="100%" stop-color="#7f1d1d"/>
+              </linearGradient>
+              <filter id="muGlow" x="-20%" y="-20%" width="140%" height="140%">
+                <feGaussianBlur stdDeviation="2.5" result="blur" />
+                <feComposite in="SourceGraphic" in2="blur" operator="over" />
+              </filter>
+            </defs>
+            <path d="M50 8 L58 24 L78 22 L66 38 L82 48 L64 56 L68 76 L50 64 L32 76 L36 56 L18 48 L34 38 L22 22 L42 24 Z" fill="url(#crestGold)" filter="url(#muGlow)"/>
+            <path d="M28 20 L72 80 M72 20 L28 80" stroke="url(#crestGold)" stroke-width="2.5" stroke-linecap="round"/>
+            <polygon points="50,22 68,36 62,68 50,78 38,68 32,36" fill="#141724" stroke="url(#crestGold)" stroke-width="2"/>
+            <polygon points="50,38 60,50 50,62 40,50" fill="url(#jewelRed)" stroke="#fef08a" stroke-width="1.2"/>
+            <circle cx="50" cy="50" r="3" fill="#ffffff" opacity="0.85"/>
+          </svg>
         </div>
 
-        <!-- 3 Realm Difficulty Selector -->
-        <div class="realm-bar">
-            <button class="realm-btn" id="realmBtn0" onclick="switchRealm(0)">🟢 Easy (300x)</button>
-            <button class="realm-btn" id="realmBtn1" onclick="switchRealm(1)">🟡 Medium (100x)</button>
-            <button class="realm-btn" id="realmBtn2" onclick="switchRealm(2)">🔴 Hard (30x)</button>
+        <h1 class="mu-preloader-title">MU ONLINE</h1>
+        <div class="mu-preloader-sub">SOLO CLASSIC 0.97k</div>
+
+        <div class="mu-progress-box">
+          <div class="mu-progress-meta">
+            <span id="muStatusMsg">Initializing client...</span>
+            <span id="muStatusDetail">0%</span>
+          </div>
+          <div class="mu-bar-track">
+            <div id="muBarFill" class="mu-bar-fill" style="width: 3%;">
+              <div class="mu-bar-light"></div>
+            </div>
+          </div>
         </div>
 
-        <div class="header-controls">
-            <!-- LocalStorage Status Pill -->
-            <div class="save-indicator">
-                <span class="storage-pill" id="storagePill">🔒 Easy Realm</span>
-                <span id="saveStatus">Готово</span>
-            </div>
-
-            <!-- Server Status -->
-            <div class="server-status">
-                <span class="status-dot" id="statusDot"></span>
-                <span id="statusText">Ініціалізація сервера...</span>
-            </div>
+        <div class="mu-tips-box">
+          <span class="mu-tip-icon">⚔️</span>
+          <span id="muTipText" class="mu-tip-msg">Loading game assets...</span>
         </div>
-    </header>
+      </div>
+    </div>
 
-    <main>
-        <!-- Sidebar Controls -->
-        <div class="sidebar">
-
-            <!-- 3D WebGL2 WASM Game Client Launcher -->
-            <div class="card" style="border-color: rgba(99, 102, 241, 0.6); background: linear-gradient(180deg, rgba(79, 70, 229, 0.15) 0%, rgba(30, 41, 59, 0.8) 100%);">
-                <div class="card-title">
-                    <span style="color: #a5b4fc; font-weight: 700;">🎮 3D WebGL2 Client (WASM)</span>
-                    <span style="background: #4338ca; color: #e0e7ff; font-size: 0.68rem; padding: 2px 7px; border-radius: 4px; font-weight: 600;">0.97k Engine</span>
-                </div>
-                <p style="font-size: 0.8rem; color: #94a3b8; margin: 0.4rem 0 0.85rem 0; line-height: 1.45;">
-                    Повноцінний 3D клієнт гри у браузері з оригінальною графікою, анімаціями, звуком, підтримкою миші, тачу та геймпада!
-                </p>
-                <a href="/client/" target="_blank" class="btn" style="background: linear-gradient(135deg, #4f46e5, #7c3aed); color: white; text-align: center; font-weight: 700; text-decoration: none; padding: 10px 14px; border-radius: 8px; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 4px 14px rgba(99, 102, 241, 0.4); cursor: pointer;">
-                    🚀 Відкрити 3D Клієнт (Нове вікно)
-                </a>
-            </div>
-
-            <!-- Difficulty & Rates Card -->
-            <div class="card" id="difficultyCard" style="border-color: rgba(16, 185, 129, 0.4);">
-                <div class="card-title">
-                    <span id="realmCardTitle">🟢 Реалм: Easy</span>
-                    <span id="realmBadge" style="color: #34d399; font-size: 0.75rem; font-weight: 700;">300x EXP</span>
-                </div>
-                <div class="stat-grid">
-                    <div class="stat-box">
-                        <div class="stat-label">EXP / Event EXP</div>
-                        <div class="stat-value" id="rateExp" style="font-size: 1.15rem; color: #34d399;">300x</div>
-                    </div>
-                    <div class="stat-box">
-                        <div class="stat-label">Item / Zen Drop</div>
-                        <div class="stat-value" id="rateDrop" style="font-size: 1.15rem; color: #fbbf24;">150% / 100%</div>
-                    </div>
-                    <div class="stat-box">
-                        <div class="stat-label">Reset / Grand Reset</div>
-                        <div class="stat-value" id="rateReset" style="font-size: 1.05rem; color: #60a5fa;">Lv 300 / 50 Res</div>
-                    </div>
-                    <div class="stat-box">
-                        <div class="stat-label">Монстри HP / DMG</div>
-                        <div class="stat-value" id="rateMonster" style="font-size: 1.05rem; color: #f472b6;">0.7x (Слабкі)</div>
-                    </div>
-                </div>
-                <div style="margin-top: 0.85rem; padding-top: 0.65rem; border-top: 1px solid var(--border-color); font-size: 0.75rem; color: var(--text-dim); display: flex; justify-content: space-between; align-items: center;">
-                    <span id="ratePenalty">💀 Штраф: Немає (0%)</span>
-                    <span id="rateExc">✨ Exc: 1.5x</span>
-                    <span style="color: #ef4444; font-weight: 600;" title="Обмін речами між гравцями вимкнено">🚫 Trade: Off</span>
-                </div>
-            </div>
-
-            <!-- Manual Save / Load Controls -->
-            <div class="card" style="border-color: var(--border-highlight);">
-                <div class="card-title">
-                    <span>Керування сейвами (Save / Load)</span>
-                    <span id="saveCountBadge" style="color: #fbbf24; font-size: 0.75rem;">0 файлів</span>
-                </div>
-                <div class="actions-group">
-                    <div class="btn-row">
-                        <button class="btn btn-success" id="btnManualSave" onclick="manualSave()">
-                            💾 Save (Сейв)
-                        </button>
-                        <button class="btn btn-warning" id="btnManualLoad" onclick="manualLoad()">
-                            📂 Load (Завантажити)
-                        </button>
-                    </div>
-                    <div class="btn-row">
-                        <button class="btn btn-secondary" onclick="exportSaveFile()" title="Завантажити файл збереження на комп'ютер">
-                            ⬇️ Експорт у файл
-                        </button>
-                        <button class="btn btn-secondary" onclick="triggerImportFileInput()" title="Завантажити файл сейву з комп'ютера">
-                            ⬆️ Імпорт з файлу
-                        </button>
-                    </div>
-                    <input type="file" id="importFileInput" accept=".json,.musav" style="display: none;" onchange="handleImportFile(event)">
-                </div>
-            </div>
-
-            <!-- Server Telemetry -->
-            <div class="card">
-                <div class="card-title">
-                    <span>Метрики сервера</span>
-                    <span id="tpsCounter" style="color: var(--accent-green); font-family: 'JetBrains Mono';">20 TPS</span>
-                </div>
-                <div class="stat-grid">
-                    <div class="stat-box">
-                        <div class="stat-label">Монстри у світі</div>
-                        <div class="stat-value" id="monsterCount">3,245</div>
-                    </div>
-                    <div class="stat-box">
-                        <div class="stat-label">Гравців онлайн</div>
-                        <div class="stat-value" id="playerCount">0</div>
-                    </div>
-                    <div class="stat-box">
-                        <div class="stat-label">Пакети TX / RX</div>
-                        <div class="stat-value" id="packetRatio">0 / 0</div>
-                    </div>
-                    <div class="stat-box">
-                        <div class="stat-label">Активні карти</div>
-                        <div class="stat-value">17</div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Player Handshake -->
-            <div class="card">
-                <div class="card-title">Тестовий хендшейк клієнта</div>
-                <div class="actions-group">
-                    <button class="btn btn-primary" id="btnConnect" onclick="connectPlayer()">
-                        1. Підключити гравця
-                    </button>
-                    <button class="btn btn-secondary" id="btnLogin" onclick="loginAccount()" disabled>
-                        2. Авторизація (solo/solo)
-                    </button>
-                    <button class="btn btn-secondary" id="btnCharList" onclick="requestCharList()" disabled>
-                        3. Список персонажів
-                    </button>
-                    <button class="btn btn-secondary" id="btnCreateChar" onclick="createDarkKnight()" disabled>
-                        4. Створити Dark Knight (HeroDK)
-                    </button>
-                    <button class="btn btn-secondary" id="btnSelectChar" onclick="selectCharacter()" disabled>
-                        5. Увійти в Lorencia (HeroDK)
-                    </button>
-                </div>
-            </div>
-
-            <!-- In-Game Movement & Combat -->
-            <div class="card">
-                <div class="card-title">Ігрові дії (Світ)</div>
-                <div class="actions-group">
-                    <button class="btn btn-secondary" id="btnWalk" onclick="sendWalk()" disabled>
-                        Рух: (125, 125) &rarr; (126, 126)
-                    </button>
-                    <button class="btn btn-secondary" id="btnAttack" onclick="sendAttack()" disabled>
-                        Атакувати монстра (ID: 0)
-                    </button>
-                </div>
-            </div>
-        </div>
-
-        <!-- Main Content Area -->
-        <div class="content-area">
-            <!-- Packet Live Inspector -->
-            <div class="packet-stream">
-                <div class="panel-header">
-                    <div style="font-weight: 600; font-size: 0.9rem;">Live In-Memory Packet Inspector</div>
-                    <button class="btn btn-secondary" style="padding: 0.35rem 0.75rem; font-size: 0.75rem;" onclick="clearPackets()">Очистити</button>
-                </div>
-                <div class="table-container">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th style="width: 90px;">Час</th>
-                                <th style="width: 70px;">Напрям</th>
-                                <th style="width: 70px;">Head</th>
-                                <th style="width: 70px;">Sub</th>
-                                <th style="width: 80px;">Розмір</th>
-                                <th>Опис пакету</th>
-                                <th>Raw Hex</th>
-                            </tr>
-                        </thead>
-                        <tbody id="packetTableBody">
-                            <!-- Packets added dynamically -->
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
-            <!-- Server Console Output -->
-            <div class="terminal">
-                <div class="panel-header">
-                    <div style="font-weight: 600; font-size: 0.9rem;">GameServer Log Terminal</div>
-                    <button class="btn btn-secondary" style="padding: 0.35rem 0.75rem; font-size: 0.75rem;" onclick="clearLogs()">Очистити</button>
-                </div>
-                <div class="terminal-body" id="logBody">
-                    <!-- Logs added dynamically -->
-                </div>
-            </div>
-        </div>
-    </main>
-
+    <div id="status">Starting…</div>
+    <pre id="log"></pre>
+    <canvas id="canvas" width="640" height="480" tabindex="-1" oncontextmenu="return false"></canvas>
+    <div id="muStick" aria-label="Move"><div id="muStickKnob"></div></div>
+    <button id="muRBtn" type="button" aria-label="Right mouse">
+      <svg width="28" height="28" viewBox="0 0 28 28" fill="none" stroke="currentColor" stroke-width="1.6">
+        <rect x="7" y="3" width="14" height="22" rx="7"></rect>
+        <path d="M14 3v9h7"></path>
+        <path d="M15 6.5h4.2" stroke-width="2.4"></path>
+      </svg>
+    </button>
+    <button id="muKeyBtn" type="button" aria-label="Keyboard">
+      <svg width="26" height="18" viewBox="0 0 26 18" fill="none" stroke="currentColor" stroke-width="1.6">
+        <rect x="1" y="1" width="24" height="16" rx="2"></rect>
+        <path d="M4 5h2M8 5h2M12 5h2M16 5h2M20 5h2M5 9h2M9 9h2M13 9h2M17 9h2M6 13h14"></path>
+      </svg>
+    </button>
+    <div id="muKeys">
+      <div class="row">
+        <button type="button" data-vk="49" data-ch="49">1</button>
+        <button type="button" data-vk="50" data-ch="50">2</button>
+        <button type="button" data-vk="51" data-ch="51">3</button>
+        <button type="button" data-vk="52" data-ch="52">4</button>
+        <button type="button" data-vk="53" data-ch="53">5</button>
+        <button type="button" data-vk="54" data-ch="54">6</button>
+        <button type="button" data-vk="55" data-ch="55">7</button>
+        <button type="button" data-vk="56" data-ch="56">8</button>
+        <button type="button" data-vk="57" data-ch="57">9</button>
+        <button type="button" data-vk="48" data-ch="48">0</button>
+      </div>
+      <div class="row">
+        <button type="button" data-vk="81" data-ch="113">q</button>
+        <button type="button" data-vk="87" data-ch="119">w</button>
+        <button type="button" data-vk="69" data-ch="101">e</button>
+        <button type="button" data-vk="82" data-ch="114">r</button>
+        <button type="button" data-vk="84" data-ch="116">t</button>
+        <button type="button" data-vk="89" data-ch="121">y</button>
+        <button type="button" data-vk="85" data-ch="117">u</button>
+        <button type="button" data-vk="73" data-ch="105">i</button>
+        <button type="button" data-vk="79" data-ch="111">o</button>
+        <button type="button" data-vk="80" data-ch="112">p</button>
+      </div>
+      <div class="row">
+        <button type="button" data-vk="65" data-ch="97">a</button>
+        <button type="button" data-vk="83" data-ch="115">s</button>
+        <button type="button" data-vk="68" data-ch="100">d</button>
+        <button type="button" data-vk="70" data-ch="102">f</button>
+        <button type="button" data-vk="71" data-ch="103">g</button>
+        <button type="button" data-vk="72" data-ch="104">h</button>
+        <button type="button" data-vk="74" data-ch="106">j</button>
+        <button type="button" data-vk="75" data-ch="107">k</button>
+        <button type="button" data-vk="76" data-ch="108">l</button>
+      </div>
+      <div class="row">
+        <button type="button" class="wide" data-lock="16">shift</button>
+        <button type="button" data-vk="90" data-ch="122">z</button>
+        <button type="button" data-vk="88" data-ch="120">x</button>
+        <button type="button" data-vk="67" data-ch="99">c</button>
+        <button type="button" data-vk="86" data-ch="118">v</button>
+        <button type="button" data-vk="66" data-ch="98">b</button>
+        <button type="button" data-vk="78" data-ch="110">n</button>
+        <button type="button" data-vk="77" data-ch="109">m</button>
+        <button type="button" class="wide" data-vk="8" data-ch="8">⌫</button>
+      </div>
+      <div class="row">
+        <button type="button" data-vk="27">esc</button>
+        <button type="button" data-lock="17">ctrl</button>
+        <button type="button" class="space" data-vk="32" data-ch="32">space</button>
+        <button type="button" data-vk="37">←</button>
+        <button type="button" data-vk="38">↑</button>
+        <button type="button" data-vk="40">↓</button>
+        <button type="button" data-vk="39">→</button>
+        <button type="button" class="wide" data-vk="13" data-ch="13">enter</button>
+      </div>
+    </div>
     <script>
-        const REALMS = [
-            {
-                id: 0,
-                name: 'Easy',
-                color: '#34d399',
-                border: 'rgba(16, 185, 129, 0.4)',
-                btnClass: 'active-easy',
-                key: 'mu_solo_save_easy',
-                exp: '300x',
-                eventExp: '300x',
-                drop: '150% / 100%',
-                reset: 'Lv 300 / 50 Res',
-                monster: '0.7x (Слабкі)',
-                penalty: '💀 Штраф: Немає (0%)',
-                exc: '✨ Exc: 1.5x'
-            },
-            {
-                id: 1,
-                name: 'Medium',
-                color: '#fbbf24',
-                border: 'rgba(245, 158, 11, 0.4)',
-                btnClass: 'active-medium',
-                key: 'mu_solo_save_medium',
-                exp: '100x',
-                eventExp: '100x',
-                drop: '100% / 50%',
-                reset: 'Lv 400 / 100 Res',
-                monster: '1.0x (Базові)',
-                penalty: '💀 Штраф: Звичайний (3%)',
-                exc: '✨ Exc: 1.0x'
-            },
-            {
-                id: 2,
-                name: 'Hard',
-                color: '#f87171',
-                border: 'rgba(239, 68, 68, 0.4)',
-                btnClass: 'active-hard',
-                key: 'mu_solo_save_hard',
-                exp: '30x',
-                eventExp: '30x',
-                drop: '50% / 25%',
-                reset: 'Lv 400 / 150 Res',
-                monster: '1.5x (Хардкор)',
-                penalty: '💀 Штраф: Подвійний (6%)',
-                exc: '✨ Exc: 0.5x'
-            }
-        ];
+      window.muInstallKeys = function () {
+        var btn = document.getElementById('muKeyBtn');
+        var pad = document.getElementById('muKeys');
+        if (!btn || !pad || btn._mu) return;
+        btn._mu = 1;
+        var held = {};
+        function send(down, vk, ch) {
+          if (typeof Module !== 'undefined' && Module._mu_key)
+            Module._mu_key(down ? 1 : 0, vk | 0, down ? (ch | 0) : 0);
+        }
+        function stop(ev) { ev.preventDefault(); ev.stopPropagation(); }
+        btn.addEventListener('pointerdown', function (ev) {
+          stop(ev);
+          var open = pad.classList.toggle('on');
+          btn.classList.toggle('on', open);
+        });
+        pad.addEventListener('pointerdown', function (ev) {
+          var key = ev.target.closest('button');
+          if (!key) return;
+          stop(ev);
+          if (key.getAttribute('data-lock')) {
+            var vk = key.getAttribute('data-lock') | 0;
+            var on = !key.classList.contains('lit');
+            key.classList.toggle('lit', on);
+            send(on, vk, 0);
+            return;
+          }
+          var vk = key.getAttribute('data-vk') | 0;
+          var ch = key.getAttribute('data-ch');
+          ch = ch == null ? 0 : (ch | 0);
+          if (ch >= 97 && ch <= 122 && pad.querySelector('[data-lock="16"].lit')) ch -= 32;
+          send(1, vk, ch);
+          var rep = 0;
+          if (ch) {
+            rep = setTimeout(function tick() {
+              var h = held[ev.pointerId];
+              if (!h) return;
+              send(1, vk, ch);
+              h.timer = setTimeout(tick, 45);
+            }, 420);
+          }
+          held[ev.pointerId] = { vk: vk, timer: rep };
+          key.setPointerCapture(ev.pointerId);
+        });
+        function release(ev) {
+          var h = held[ev.pointerId];
+          if (!h) return;
+          clearTimeout(h.timer);
+          send(0, h.vk, 0);
+          delete held[ev.pointerId];
+        }
+        pad.addEventListener('pointerup', release);
+        pad.addEventListener('pointercancel', release);
+        window.addEventListener('blur', function () {
+          Object.keys(held).forEach(function (id) {
+            clearTimeout(held[id].timer);
+            send(0, held[id].vk, 0);
+          });
+          held = {};
+        });
+      };
+      window.muInstallTouch = function () {
+        var stick = document.getElementById('muStick');
+        var knob = document.getElementById('muStickKnob');
+        var rbtn = document.getElementById('muRBtn');
+        if (!stick || stick._mu) return;
+        stick._mu = 1;
+        var radius = 40;
+        var lastX = 0, lastY = 0, timer = 0, pid = -1;
+        function stickSend() {
+          if (typeof Module !== 'undefined' && Module._mu_stick)
+            Module._mu_stick(lastX | 0, lastY | 0);
+        }
+        function place(ev) {
+          var box = stick.getBoundingClientRect();
+          var dx = ev.clientX - (box.left + box.width / 2);
+          var dy = ev.clientY - (box.top + box.height / 2);
+          var len = Math.sqrt(dx * dx + dy * dy);
+          var kx = 0, ky = 0;
+          lastX = 0;
+          lastY = 0;
+          if (len > 8) {
+            var clamped = Math.min(len, radius);
+            var s = clamped / len;
+            kx = dx * s;
+            ky = dy * s;
+            lastX = Math.round((dx / len) * (clamped / radius) * 100);
+            lastY = Math.round((dy / len) * (clamped / radius) * 100);
+          }
+          knob.style.transform = 'translate(' + kx + 'px,' + ky + 'px)';
+          stickSend();
+        }
+        function arm() {
+          if (timer) return;
+          timer = setInterval(stickSend, 40);
+        }
+        function disarm() {
+          lastX = 0;
+          lastY = 0;
+          knob.style.transform = '';
+          stickSend();
+          if (timer) { clearInterval(timer); timer = 0; }
+          pid = -1;
+        }
+        stick.addEventListener('pointerdown', function (ev) {
+          ev.preventDefault();
+          ev.stopPropagation();
+          pid = ev.pointerId;
+          place(ev);
+          arm();
+          try { stick.setPointerCapture(ev.pointerId); } catch (e) {}
+        });
+        stick.addEventListener('pointermove', function (ev) {
+          if (ev.pointerId !== pid) return;
+          ev.preventDefault();
+          place(ev);
+        });
+        stick.addEventListener('pointerup', function (ev) {
+          if (ev.pointerId !== pid) return;
+          ev.preventDefault();
+          disarm();
+        });
+        stick.addEventListener('pointercancel', disarm);
+        if (rbtn && !rbtn._mu) {
+          rbtn._mu = 1;
+          var rpid = -1;
+          function rsend(down) {
+            if (typeof Module !== 'undefined' && Module._mu_rbutton)
+              Module._mu_rbutton(down ? 1 : 0);
+          }
+          rbtn.addEventListener('pointerdown', function (ev) {
+            ev.preventDefault();
+            ev.stopPropagation();
+            rpid = ev.pointerId;
+            rbtn.classList.add('on');
+            rsend(1);
+            try { rbtn.setPointerCapture(ev.pointerId); } catch (e) {}
+          });
+          function rlift(ev) {
+            if (ev && ev.pointerId !== rpid) return;
+            rbtn.classList.remove('on');
+            rsend(0);
+            rpid = -1;
+          }
+          rbtn.addEventListener('pointerup', rlift);
+          rbtn.addEventListener('pointercancel', rlift);
+        }
+        window.addEventListener('blur', function () { disarm(); if (rbtn) { rbtn.classList.remove('on'); if (Module._mu_rbutton) Module._mu_rbutton(0); } });
+      };
+      // PC gamepads and the Steam Deck controls share the standard mapping:
+      // left stick walks, right stick moves the cursor, RT/RB holds the right
+      // button, A holds the left button, B and Back are Esc, Start is Enter.
+      window.muInstallPad = function () {
+        if (window._muPad) return;
+        window._muPad = 1;
+        var cursor = { x: 320, y: 240 };
+        var latched = {};
+        var stickOn = 0, rDown = 0, lDown = 0, seen = 0;
+        function call(name, args) {
+          var fn = (typeof Module !== 'undefined') ? Module[name] : null;
+          if (fn) fn.apply(null, args);
+        }
+        function setKey(name, down, vk, ch) {
+          if (down && !latched[name]) { latched[name] = vk; call('_mu_key', [1, vk, ch || 0]); }
+          if (!down && latched[name]) { var vk0 = latched[name]; latched[name] = 0; call('_mu_key', [0, vk0, 0]); }
+        }
+        function releaseAll() {
+          if (stickOn) { stickOn = 0; call('_mu_stick', [0, 0]); }
+          if (rDown) { rDown = 0; call('_mu_rbutton', [0]); }
+          if (lDown) { lDown = 0; call('_mu_lbutton', [0]); }
+          Object.keys(latched).forEach(function (name) { setKey(name, 0, 0, 0); });
+        }
+        function pressed(pad, i) {
+          var b = pad.buttons && pad.buttons[i];
+          return !!(b && (b.pressed || b.value > 0.45));
+        }
+        function axis(pad, i) {
+          var v = (pad.axes && pad.axes[i]) || 0;
+          return Math.abs(v) < 0.18 ? 0 : v;
+        }
+        window.muReadPad = function (pad) {
+          if (!pad || !pad.connected) { if (seen) releaseAll(); seen = 0; return; }
+          seen = 1;
+          var lx = axis(pad, 0), ly = axis(pad, 1);
+          if (lx || ly) { stickOn = 1; call('_mu_stick', [Math.round(lx * 100), Math.round(ly * 100)]); }
+          else if (stickOn) { stickOn = 0; call('_mu_stick', [0, 0]); }
+          var rx = axis(pad, 2), ry = axis(pad, 3);
+          if (!stickOn && (rx || ry)) {
+            cursor.x = Math.max(0, Math.min(639, cursor.x + rx * 14));
+            cursor.y = Math.max(0, Math.min(479, cursor.y + ry * 14));
+            call('_mu_cursor', [cursor.x | 0, cursor.y | 0]);
+          }
+          var attack = pressed(pad, 7) || pressed(pad, 5);
+          if (attack !== !!rDown) { rDown = attack ? 1 : 0; call('_mu_rbutton', [rDown]); }
+          var south = pressed(pad, 0);
+          if (!stickOn && south !== !!lDown) { lDown = south ? 1 : 0; call('_mu_lbutton', [lDown]); }
+          if (stickOn && lDown) { lDown = 0; call('_mu_lbutton', [0]); }
+          setKey('up', pressed(pad, 12), 38, 0);
+          setKey('down', pressed(pad, 13), 40, 0);
+          setKey('left', pressed(pad, 14), 37, 0);
+          setKey('right', pressed(pad, 15), 39, 0);
+          setKey('b', pressed(pad, 1), 27, 0);
+          setKey('back', pressed(pad, 8), 27, 0);
+          setKey('start', pressed(pad, 9), 13, 13);
+        };
+        function tick() {
+          var pad = null;
+          var list = navigator.getGamepads ? navigator.getGamepads() : [];
+          for (var i = 0; i < list.length; i++) {
+            if (list[i] && list[i].connected) { pad = list[i]; break; }
+          }
+          window.muReadPad(pad);
+          requestAnimationFrame(tick);
+        }
+        requestAnimationFrame(tick);
+      };
+      window.muInstallAudio = function () {
+        if (window._muAudio) return;
+        window._muAudio = 1;
+        var canvas = document.getElementById('canvas');
+        function sync() {
+          // The canvas covers the page, and game clicks swallow the default
+          // focus, so the canvas is rarely the active element. Mute only when
+          // the tab itself is in the background.
+          var on = document.visibilityState === 'visible' && document.hasFocus();
+          if (typeof Module !== 'undefined' && Module._mu_audible)
+            Module._mu_audible(on ? 1 : 0);
+        }
+        function resume() {
+          canvas.focus({ preventScroll: true });
+          sync();
+          var list = window.miniaudio && window.miniaudio.devices;
+          if (!list) return;
+          for (var i = 0; i < list.length; i++) {
+            var device = list[i];
+            if (device && device.webaudio && device.webaudio.resume)
+              device.webaudio.resume();
+          }
+        }
+        document.addEventListener('mousedown', function (ev) {
+          var t = ev.target && ev.target.closest && ev.target.closest('#muKeys, #muStick, #muKeyBtn, #muRBtn');
+          if (!t) return;
+          ev.preventDefault();
+          canvas.focus({ preventScroll: true });
+        }, true);
+        document.addEventListener('pointerdown', resume, true);
+        window.addEventListener('blur', sync);
+        window.addEventListener('focus', sync);
+        document.addEventListener('visibilitychange', sync);
+        sync();
+      };
 
-        let currentRealm = 0;
-        let worker = null;
-        let rxCount = 0;
-        let txCount = 0;
-        let activePlayerIndex = -1;
+      // ── Zero-Network In-Memory Bridge to GameServer Web Worker ────────────
+      (function () {
+        var worker = null;
+        var workerReady = false;
+        var currentRealm = 0;
+        var pendingConnectRealm = null;
+        var incomingQueue = [];
 
-        function getStorageKey(realmIndex = currentRealm) {
-            return REALMS[realmIndex]?.key || REALMS[0].key;
+        function getSaveKey(realm) {
+          return 'mu_solo_realm_' + (realm !== undefined ? realm : currentRealm) + '_vault';
         }
 
-        function updateRealmUI() {
-            const r = REALMS[currentRealm];
-
-            for (let i = 0; i < 3; i++) {
-                const btn = document.getElementById(`realmBtn${i}`);
-                if (btn) {
-                    btn.className = `realm-btn ${i === currentRealm ? REALMS[i].btnClass : ''}`;
-                }
-            }
-
-            const pill = document.getElementById('storagePill');
-            if (pill) {
-                pill.textContent = `🔒 ${r.name} Realm`;
-                pill.style.color = r.color;
-            }
-
-            const card = document.getElementById('difficultyCard');
-            if (card) card.style.borderColor = r.border;
-
-            const title = document.getElementById('realmCardTitle');
-            if (title) title.textContent = `${r.id === 0 ? '🟢' : r.id === 1 ? '🟡' : '🔴'} Реалм: ${r.name}`;
-
-            const badge = document.getElementById('realmBadge');
-            if (badge) {
-                badge.textContent = `${r.exp} EXP`;
-                badge.style.color = r.color;
-            }
-
-            const expEl = document.getElementById('rateExp');
-            if (expEl) { expEl.textContent = `${r.exp} / ${r.eventExp}`; expEl.style.color = r.color; }
-
-            const dropEl = document.getElementById('rateDrop');
-            if (dropEl) dropEl.textContent = r.drop;
-
-            const resetEl = document.getElementById('rateReset');
-            if (resetEl) resetEl.textContent = r.reset;
-
-            const monsterEl = document.getElementById('rateMonster');
-            if (monsterEl) monsterEl.textContent = r.monster;
-
-            const penaltyEl = document.getElementById('ratePenalty');
-            if (penaltyEl) penaltyEl.textContent = r.penalty;
-
-            const excEl = document.getElementById('rateExc');
-            if (excEl) excEl.textContent = r.exc;
-        }
-
-        function switchRealm(mode) {
-            if (mode === currentRealm) return;
-            const prevRealm = currentRealm;
-            appendLog(`[Реалм] Перемикання на ${REALMS[mode].name}... Збереження прогресу [${REALMS[prevRealm].name}].`, '#fbbf24');
-
-            // 1. Persist previous realm before switching
-            if (worker) {
-                worker.postMessage({ action: 'EXPORT_SAVES', payload: { realm: prevRealm, reason: 'switch' } });
-            }
-
-            currentRealm = mode;
-            localStorage.setItem('mu_solo_active_realm', currentRealm);
-
-            // 2. Fetch new realm saves safely
-            let newSaves = null;
-            const raw = localStorage.getItem(getStorageKey(currentRealm));
+        function loadSavedContainer(realm) {
+          try {
+            const raw = localStorage.getItem(getSaveKey(realm));
             if (raw) {
+              const parsed = JSON.parse(raw);
+              if (parsed && typeof parsed === 'object') return parsed;
+            }
+          } catch (e) {
+            console.error('[SoloBridge] Failed to load save container:', e);
+          }
+          return null;
+        }
+
+        function deliverPacketToClient(bytes) {
+          var heap = null;
+          try {
+            heap = (typeof window !== 'undefined' && window.HEAPU8) || (typeof Module !== 'undefined' && Module.HEAPU8);
+          } catch (e) {}
+          if (typeof Module !== 'undefined' && Module._mu_net_push_packet && Module._mu_net_get_push_buffer && heap) {
+            const ptr = Module._mu_net_get_push_buffer();
+            heap.set(bytes, ptr);
+            Module._mu_net_push_packet(bytes.length);
+          } else {
+            incomingQueue.push(bytes);
+          }
+        }
+
+        function initServerWorker(difficulty) {
+          if (difficulty === undefined) difficulty = 0;
+          if (worker) return;
+          currentRealm = difficulty;
+          console.log('[SoloBridge] Initializing Server Web Worker for difficulty realm:', difficulty);
+          worker = new Worker('server_worker.js');
+
+          worker.onmessage = function (e) {
+            const msg = e.data;
+            if (!msg) return;
+
+            if (msg.type === 'LOG') {
+              console.log(`%c[SoloServer] ${msg.message}`, `color: ${msg.color || '#60a5fa'}`);
+            } else if (msg.type === 'SERVER_READY') {
+              console.log('[SoloBridge] Solo GameServer is READY! Monsters:', msg.monsters, 'Realm:', msg.difficulty);
+              workerReady = true;
+              if (pendingConnectRealm !== null) {
+                const r = pendingConnectRealm;
+                pendingConnectRealm = null;
+                window.soloBridge.connect(r);
+              }
+            } else if (msg.type === 'PACKET_FROM_SERVER') {
+              deliverPacketToClient(new Uint8Array(msg.data));
+            } else if (msg.type === 'AUTO_SAVE_DATA') {
+              if (msg.saves) {
                 try {
-                    const parsed = JSON.parse(raw);
-                    if (parsed && typeof parsed === 'object') {
-                        newSaves = parsed;
-                    }
-                } catch (e) {}
-            }
-
-            // 3. Inform worker of realm switch
-            if (worker) {
-                worker.postMessage({
-                    action: 'SWITCH_REALM',
-                    payload: { saves: newSaves, mode: currentRealm }
-                });
-            }
-
-            updateRealmUI();
-            updateSaveCountBadge();
-        }
-
-        function appendLog(text, color = '#cbd5e1') {
-            const body = document.getElementById('logBody');
-            const now = new Date().toTimeString().split(' ')[0];
-            const div = document.createElement('div');
-            div.className = 'log-entry';
-            div.style.color = color;
-            div.innerHTML = `<span class="log-time">[${now}]</span> ${text}`;
-            body.appendChild(div);
-            body.scrollTop = body.scrollHeight;
-        }
-
-        function clearLogs() {
-            document.getElementById('logBody').innerHTML = '';
-        }
-
-        function clearPackets() {
-            document.getElementById('packetTableBody').innerHTML = '';
-        }
-
-        function updateSaveStatus(text, color = '#34d399') {
-            const el = document.getElementById('saveStatus');
-            el.textContent = text;
-            el.style.color = color;
-        }
-
-        function updateSaveCountBadge() {
-            try {
-                const raw = localStorage.getItem(getStorageKey());
-                if (raw) {
-                    const parsed = JSON.parse(raw);
-                    if (parsed && typeof parsed === 'object') {
-                        const count = parsed.filesCount !== undefined ? parsed.filesCount : Object.keys(parsed).length;
-                        const enc = parsed.encrypted ? ' 🔒' : '';
-                        document.getElementById('saveCountBadge').textContent = `${count} файл(ів)${enc}`;
-                        return;
-                    }
-                }
-                document.getElementById('saveCountBadge').textContent = '0 файлів';
-            } catch (e) {
-                document.getElementById('saveCountBadge').textContent = '0 файлів';
-            }
-        }
-
-        function describePacket(head, subhead, isServerToClient) {
-            const h = head.toString(16).toUpperCase().padStart(2, '0');
-            const sub = subhead.toString(16).toUpperCase().padStart(2, '0');
-
-            if (isServerToClient) {
-                if (h === 'F1' && sub === '00') return 'Connect Greeting (Server Ready)';
-                if (h === 'F1' && sub === '01') return 'Login Result (Success)';
-                if (h === 'F3' && sub === '00') return 'Character List Data';
-                if (h === 'F3' && sub === '01') return 'Character Create Response';
-                if (h === 'F3' && sub === '03') return 'Character Stats & Map Spawn';
-                if (h === 'D4') return 'Object Move Notification';
-                if (h === '11') return 'Attack Damage & Animation';
-                if (h === '26') return 'Shop Item List';
-                if (h === '00') return 'Chat / Announcement';
-                return `Server Msg (0x${h}:0x${sub})`;
-            } else {
-                if (h === 'F1' && sub === '01') return 'Client Account Login';
-                if (h === 'F3' && sub === '00') return 'Request Character List';
-                if (h === 'F3' && sub === '01') return 'Request Create Character';
-                if (h === 'F3' && sub === '03') return 'Select Character & Enter Map';
-                if (h === 'D4') return 'Client Walk / Movement';
-                if (h === '11') return 'Client Attack Target';
-                return `Client Msg (0x${h}:0x${sub})`;
-            }
-        }
-
-        function addPacketRow(dir, bytes) {
-            const tbody = document.getElementById('packetTableBody');
-            const now = new Date().toTimeString().split(' ')[0];
-            const isServer = (dir === 'RX');
-
-            if (isServer) rxCount++; else txCount++;
-            document.getElementById('packetRatio').textContent = `${txCount} / ${rxCount}`;
-
-            const head = bytes[0] === 0xC1 || bytes[0] === 0xC3 ? bytes[2] : bytes[3];
-            const subhead = bytes[0] === 0xC1 || bytes[0] === 0xC3 ? bytes[3] : bytes[4];
-            const hex = bytes.map(b => b.toString(16).padStart(2, '0').toUpperCase()).join(' ');
-
-            const tr = document.createElement('tr');
-            tr.innerHTML = `
-                <td>${now}</td>
-                <td><span class="badge-dir ${isServer ? 'badge-out' : 'badge-in'}">${dir}</span></td>
-                <td>0x${head.toString(16).toUpperCase().padStart(2, '0')}</td>
-                <td>0x${subhead.toString(16).toUpperCase().padStart(2, '0')}</td>
-                <td>${bytes.length} B</td>
-                <td style="color: #f1f5f9; font-weight: 500;">${describePacket(head, subhead, isServer)}</td>
-                <td class="raw-hex">${hex.substring(0, 55)}${hex.length > 55 ? '...' : ''}</td>
-            `;
-
-            tbody.insertBefore(tr, tbody.firstChild);
-            if (tbody.children.length > 100) tbody.removeChild(tbody.lastChild);
-        }
-
-        function init() {
-            // Restore active realm selection
-            const savedRealm = localStorage.getItem('mu_solo_active_realm');
-            if (savedRealm !== null) {
-                const parsedRealm = parseInt(savedRealm, 10);
-                if (!isNaN(parsedRealm) && parsedRealm >= 0 && parsedRealm <= 2) {
-                    currentRealm = parsedRealm;
-                }
-            }
-
-            // Migration from legacy single-slot key if needed
-            const legacySave = localStorage.getItem('mu_online_solo_saves_v1');
-            if (legacySave && !localStorage.getItem(REALMS[0].key)) {
-                localStorage.setItem(REALMS[0].key, legacySave);
-            }
-
-            updateRealmUI();
-
-            appendLog(`Завантаження сейвів для реалму [${REALMS[currentRealm].name}]...`, '#a78bfa');
-            let initialSaves = null;
-            try {
-                const stored = localStorage.getItem(getStorageKey());
-                if (stored) {
-                    const parsed = JSON.parse(stored);
-                    if (parsed && typeof parsed === 'object') {
-                        initialSaves = parsed;
-                        const count = initialSaves.filesCount !== undefined ? initialSaves.filesCount : Object.keys(initialSaves).length;
-                        const enc = initialSaves.encrypted ? ' (Захищено AES-256-GCM + SHA-256)' : '';
-                        appendLog(`Знайдено збереження у LocalStorage (${count} файлів${enc})`, '#34d399');
-                        updateSaveStatus(`Завантажено (${count} файлів)`);
-                    } else {
-                        appendLog(`Збережень у LocalStorage для [${REALMS[currentRealm].name}] ще немає (новий реалм)`, '#94a3b8');
-                        updateSaveStatus('Новий реалм');
-                    }
-                } else {
-                    appendLog(`Збережень у LocalStorage для [${REALMS[currentRealm].name}] ще немає (новий реалм)`, '#94a3b8');
-                    updateSaveStatus('Новий реалм');
-                }
-            } catch (err) {
-                appendLog(`Помилка читання LocalStorage: ${err.message}`, '#ef4444');
-            }
-            updateSaveCountBadge();
-
-            appendLog('Запуск WebAssembly Server Worker...', '#60a5fa');
-            worker = new Worker('server_worker.js');
-
-            worker.onmessage = function (e) {
-                const { type, message, color, monsters, players, data, saves, count, mode } = e.data;
-
-                if (type === 'LOG') {
-                    appendLog(message, color);
-                } else if (type === 'SERVER_READY') {
-                    document.getElementById('statusDot').classList.add('active');
-                    document.getElementById('statusText').textContent = 'Solo Server Running';
-                    document.getElementById('monsterCount').textContent = monsters.toLocaleString();
-                    document.getElementById('playerCount').textContent = players;
-                    document.getElementById('btnConnect').disabled = false;
-                    appendLog(`GameServer WebAssembly запущено (Реалм: ${REALMS[currentRealm].name}, 17 карт, 3,245 монстрів)`, '#34d399');
-                } else if (type === 'REALM_SWITCHED') {
-                    updateSaveStatus(`Реалм ${REALMS[mode].name} (${count} ф.)`, '#34d399');
-                    updateSaveCountBadge();
-                    appendLog(`[Реалм] Успішно активовано ${REALMS[mode].name}! Завантажено ${count} персонаж(ів) / файлів. Скриня ізольована.`, '#34d399');
-                    // Refresh character list if connected
-                    if (activePlayerIndex >= 0) {
-                        requestCharList();
-                    }
-                } else if (type === 'PACKET_FROM_SERVER') {
-                    addPacketRow('RX', data);
-                } else if (type === 'PLAYER_CONNECTED') {
-                    activePlayerIndex = e.data.playerIndex;
-                    document.getElementById('playerCount').textContent = players;
-                    document.getElementById('btnLogin').disabled = false;
-                    appendLog(`Сесія гравця створена. Індекс: ${activePlayerIndex}`, '#34d399');
-                } else if (type === 'AUTO_SAVE_DATA') {
-                    // Automatically persist to current realm LocalStorage
-                    if (!saves || typeof saves !== 'object') return;
-                    try {
-                        localStorage.setItem(getStorageKey(), JSON.stringify(saves));
-                        const fileCount = saves.filesCount !== undefined ? saves.filesCount : Object.keys(saves).length;
-                        updateSaveStatus(`Автосейв (${fileCount} ф.)`, '#34d399');
-                        updateSaveCountBadge();
-                        const hashSnippet = saves.checksum ? ` (SHA-256: ${saves.checksum.substring(0, 8)}...)` : '';
-                        appendLog(`[AutoSave] [${REALMS[currentRealm].name}] Гра збережена у LocalStorage 🔒 (${fileCount} ф.${hashSnippet})`, '#34d399');
-                    } catch (err) {
-                        appendLog(`[AutoSave] Помилка запису в LocalStorage: ${err.message}`, '#ef4444');
-                    }
-                } else if (type === 'SAVES_EXPORTED') {
-                    if (window._isDownloadingExport) {
-                        window._isDownloadingExport = false;
-                        if (!saves || typeof saves !== 'object') {
-                            alert('Не вдалося експортувати сейв: дані відсутні.');
-                            return;
-                        }
-                        downloadSaveJson(saves);
-                    } else {
-                        // Manual Save or Interval Save to LocalStorage
-                        try {
-                            if (!saves || typeof saves !== 'object') {
-                                appendLog(`[Manual Save] [${REALMS[currentRealm].name}] Помилка: немає даних для збереження`, '#ef4444');
-                                updateSaveStatus(`Помилка`, '#ef4444');
-                                return;
-                            }
-                            const saveRealm = (e.data.realm !== undefined && e.data.realm >= 0 && e.data.realm <= 2) ? e.data.realm : currentRealm;
-                            localStorage.setItem(getStorageKey(saveRealm), JSON.stringify(saves));
-                            const fileCount = saves.filesCount !== undefined ? saves.filesCount : Object.keys(saves).length;
-
-                            if (saveRealm === currentRealm) {
-                                updateSaveStatus(`Збережено (${fileCount} ф.)`, '#34d399');
-                                updateSaveCountBadge();
-                                if (e.data.reason !== 'interval' && e.data.reason !== 'unload') {
-                                    if (fileCount === 0) {
-                                        appendLog(`[Manual Save] [${REALMS[saveRealm].name}] Стан збережено (0 файлів у /saves — створіть персонажа) 🔒`, '#fbbf24');
-                                    } else {
-                                        appendLog(`[Manual Save] [${REALMS[saveRealm].name}] Стан гри зашифровано (AES-256-GCM) та збережено (${fileCount} ф.)! 🔒`, '#34d399');
-                                    }
-                                    const btn = document.getElementById('btnManualSave');
-                                    if (btn) {
-                                        const old = btn.textContent;
-                                        btn.textContent = '✅ Збережено!';
-                                        setTimeout(() => { btn.textContent = old; }, 1500);
-                                    }
-                                }
-                            }
-                        } catch (err) {
-                            appendLog(`[Manual Save] Помилка: ${err.message}`, '#ef4444');
-                        }
-                    }
-                } else if (type === 'SAVES_IMPORTED') {
-                    if (count > 0) {
-                        updateSaveStatus(`Сейв відновлено (${count} ф.)`, '#34d399');
-                        updateSaveCountBadge();
-                        appendLog(`[Manual Load] Успішно дешифровано та відновлено ${count} файл(ів)! 🔓`, '#34d399');
-                        const btn = document.getElementById('btnManualLoad');
-                        if (btn) {
-                            const old = btn.textContent;
-                            btn.textContent = '✅ Завантажено!';
-                            setTimeout(() => { btn.textContent = old; }, 1500);
-                        }
-                        requestCharList();
-                    } else {
-                        updateSaveStatus('Порожньо (0 ф.)', '#94a3b8');
-                        updateSaveCountBadge();
-                        appendLog(`[Manual Load] Сейв перевірено: 0 збережених персонажів (новий реалм)`, '#94a3b8');
-                    }
-                } else if (type === 'SAVE_INTEGRITY_ERROR') {
-                    appendLog(`[Помилка цілісності] ⚠️ ${message}`, '#ef4444');
-                    alert(`Увага! Сейв не вдалося завантажити:\n\n${message}`);
-                } else if (type === 'ERROR') {
-                    appendLog(`Server Error: ${message}`, '#ef4444');
-                }
-            };
-
-            worker.postMessage({
-                action: 'INIT',
-                payload: { saves: initialSaves, difficulty: currentRealm }
-            });
-
-            // Автоматичне фонове збереження стану гри у LocalStorage кожні 30 секунд
-            setInterval(() => {
-                if (worker) {
-                    worker.postMessage({ action: 'EXPORT_SAVES', payload: { realm: currentRealm, reason: 'interval' } });
-                }
-            }, 30000);
-
-            // Збереження перед виходом/закриттям сторінки
-            window.addEventListener('beforeunload', () => {
-                if (worker) {
-                    worker.postMessage({ action: 'EXPORT_SAVES', payload: { realm: currentRealm, reason: 'unload' } });
-                }
-            });
-        }
-
-        // Manual Save to LocalStorage
-        function manualSave() {
-            appendLog(`[Save] [${REALMS[currentRealm].name}] Зберігаємо стан гри у LocalStorage...`, '#fbbf24');
-            window._isDownloadingExport = false;
-            if (worker) {
-                worker.postMessage({ action: 'EXPORT_SAVES', payload: { realm: currentRealm, reason: 'manual' } });
-            }
-        }
-
-        // Manual Load from LocalStorage
-        function manualLoad() {
-            appendLog(`[Load] [${REALMS[currentRealm].name}] Завантажуємо стан гри з LocalStorage...`, '#fbbf24');
-            try {
-                const stored = localStorage.getItem(getStorageKey());
-                if (!stored) {
-                    alert(`Немає збережень у LocalStorage для реалму ${REALMS[currentRealm].name}!`);
-                    return;
-                }
-                const saves = JSON.parse(stored);
-                if (!saves || typeof saves !== 'object') {
-                    alert(`Сейв у LocalStorage для ${REALMS[currentRealm].name} порожній або пошкоджений!`);
-                    return;
-                }
-                if (worker) {
-                    worker.postMessage({ action: 'IMPORT_SAVES', payload: { saves: saves } });
-                }
-            } catch (err) {
-                appendLog(`[Load] Помилка: ${err.message}`, '#ef4444');
-            }
-        }
-
-        // Export save file (.musav.json) to disk
-        function exportSaveFile() {
-            appendLog(`[Export] [${REALMS[currentRealm].name}] Експорт файлу збереження...`, '#60a5fa');
-            window._isDownloadingExport = true;
-            if (worker) {
-                worker.postMessage({ action: 'EXPORT_SAVES', payload: { realm: currentRealm, reason: 'download' } });
-            }
-        }
-
-        function downloadSaveJson(saves) {
-            if (!saves || typeof saves !== 'object') return;
-            const fileCount = saves.filesCount !== undefined ? saves.filesCount : Object.keys(saves).length;
-            if (fileCount === 0) {
-                appendLog(`[Export] [${REALMS[currentRealm].name}] Персонажів ще немає (0 файлів), створено сейв порожнього реалму.`, '#fbbf24');
-            }
-            const jsonStr = JSON.stringify(saves, null, 2);
-            const blob = new Blob([jsonStr], { type: 'application/json' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            const date = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-');
-            const realmName = REALMS[currentRealm].name.toLowerCase();
-            a.download = `mu_solo_classic_${realmName}_save_${date}.musav.json`;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
-            appendLog(`[Export] Файл збереження (${REALMS[currentRealm].name}, ${fileCount} ф.) завантажено на комп'ютер!`, '#34d399');
-        }
-
-        // Import save file (.musav.json) from disk
-        function triggerImportFileInput() {
-            document.getElementById('importFileInput').click();
-        }
-
-        function handleImportFile(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                try {
-                    const saves = JSON.parse(e.target.result);
-                    // Store into active realm's LocalStorage slot
-                    localStorage.setItem(getStorageKey(), JSON.stringify(saves));
-                    worker.postMessage({ action: 'IMPORT_SAVES', payload: { saves: saves } });
-                    appendLog(`[Import] [${REALMS[currentRealm].name}] Файл ${file.name} успішно імпортовано!`, '#34d399');
+                  localStorage.setItem(getSaveKey(currentRealm), JSON.stringify(msg.saves));
+                  console.log(`[SoloBridge] Auto-saved vault for realm ${currentRealm}`);
                 } catch (err) {
-                    alert(`Помилка відкриття файлу сейву: ${err.message}`);
+                  console.error('[SoloBridge] Failed to save vault:', err);
                 }
-            };
-            reader.readAsText(file);
-            event.target.value = ''; // Reset input
+              }
+            } else if (msg.type === 'PLAYER_CONNECTED') {
+              console.log('[SoloBridge] Player connected to GameServer session:', msg.playerIndex);
+            }
+          };
+
+          const existingSaves = loadSavedContainer(difficulty);
+          worker.postMessage({
+            action: 'INIT',
+            payload: {
+              saves: existingSaves,
+              difficulty: difficulty
+            }
+          });
         }
 
-        function sendClientPacket(bytes) {
-            addPacketRow('TX', Array.from(bytes));
+        window.soloBridge = {
+          flushQueue: function () {
+            while (incomingQueue.length > 0) {
+              const pkt = incomingQueue.shift();
+              deliverPacketToClient(pkt);
+            }
+          },
+          connect: function (realmMode) {
+            console.log('[SoloBridge] Client requested GameServer connect for realm:', realmMode);
+            if (!worker) {
+              pendingConnectRealm = realmMode;
+              initServerWorker(realmMode);
+              return;
+            }
+            if (!workerReady) {
+              pendingConnectRealm = realmMode;
+              return;
+            }
+            if (currentRealm !== realmMode) {
+              currentRealm = realmMode;
+              const existingSaves = loadSavedContainer(realmMode);
+              worker.postMessage({
+                action: 'SWITCH_REALM',
+                payload: {
+                  mode: realmMode,
+                  saves: existingSaves
+                }
+              });
+            }
             worker.postMessage({
-                action: 'SEND_PACKET',
-                payload: { bytes: Array.from(bytes) }
+              action: 'CONNECT_PLAYER',
+              payload: { ip: '127.0.0.1' }
             });
-        }
+          },
+          send: function (uint8Data) {
+            if (!worker || !workerReady) {
+              console.warn('[SoloBridge] Worker not ready to send packet');
+              return;
+            }
+            worker.postMessage({
+              action: 'SEND_PACKET',
+              payload: { bytes: Array.from(uint8Data) }
+            });
+          },
+          disconnect: function () {
+            if (worker && workerReady) {
+              worker.postMessage({
+                action: 'DISCONNECT_PLAYER',
+                payload: { index: 0 }
+              });
+            }
+          }
+        };
 
-        function connectPlayer() {
-            appendLog('Створення локальної сесії гравця (In-Memory Socket)...', '#f59e0b');
-            worker.postMessage({ action: 'CONNECT_PLAYER', payload: { ip: '127.0.0.1' } });
-            document.getElementById('btnConnect').disabled = true;
-        }
+        window.soloExitGame = function () {
+          console.log('[SoloBridge] Exiting game and reloading cleanly...');
+          if (worker && workerReady) {
+            worker.postMessage({
+              action: 'DISCONNECT_PLAYER',
+              payload: { index: 0 }
+            });
+          }
+          setTimeout(function () {
+            window.location.reload();
+          }, 350);
+        };
 
-        function loginAccount() {
-            appendLog('Відправка пакету авторизації (Account: solo, Password: solo)...', '#60a5fa');
-            const packet = new Uint8Array(36);
-            packet[0] = 0xC1;
-            packet[1] = 36;
-            packet[2] = 0xF1;
-            packet[3] = 0x01;
-            const acc = "solo";
-            for (let i = 0; i < acc.length; i++) packet[4 + i] = acc.charCodeAt(i);
-            const pass = "solo";
-            for (let i = 0; i < pass.length; i++) packet[14 + i] = pass.charCodeAt(i);
+        // Pre-initialize server worker in background while assets load
+        initServerWorker(0);
+      })();
 
-            sendClientPacket(packet);
-            document.getElementById('btnCharList').disabled = false;
-            document.getElementById('btnLogin').disabled = true;
-        }
+      var statusElement = document.getElementById('status');
+      var canvasElement = document.getElementById('canvas');
+      canvasElement.addEventListener('contextmenu', function (ev) { ev.preventDefault(); });
+      var logElement = document.getElementById('log');
 
-        function requestCharList() {
-            appendLog('Запит списку персонажів (C1 04 F3 00)...', '#60a5fa');
-            const packet = new Uint8Array([0xC1, 0x04, 0xF3, 0x00]);
-            sendClientPacket(packet);
-            document.getElementById('btnCreateChar').disabled = false;
-            document.getElementById('btnSelectChar').disabled = false;
-        }
+      var preloader = document.getElementById('muPreloader');
+      var barFill = document.getElementById('muBarFill');
+      var statusMsg = document.getElementById('muStatusMsg');
+      var statusDetail = document.getElementById('muStatusDetail');
+      var tipMsg = document.getElementById('muTipText');
 
-        function createDarkKnight() {
-            appendLog('Створення персонажа Dark Knight "HeroDK"...', '#f59e0b');
-            const packet = new Uint8Array(14);
-            packet[0] = 0xC1;
-            packet[1] = 14;
-            packet[2] = 0xF3;
-            packet[3] = 0x01;
-            const name = "HeroDK";
-            for (let i = 0; i < name.length; i++) packet[4 + i] = name.charCodeAt(i);
-            packet[13] = 1; // Class 1 = Dark Knight
+      var muTips = [
+        "Use hotkeys Q, W, E to quickly drink Health and Mana potions.",
+        "Press I or V to open Inventory, and C to view Character stats.",
+        "All characters, items, and settings are saved automatically in your browser.",
+        "Press Esc to pause, change options, or safely save and exit the game.",
+        "Jewel of Bless upgrades your weapons and armor up to +6 with a 100% success rate.",
+        "Hunt Spiders and Budge Dragons outside Lorencia gates for quick early levels.",
+        "Type /post in chat to broadcast a message across the world."
+      ];
+      var tipIndex = 0;
+      var tipInterval = setInterval(function () {
+        if (!tipMsg) return;
+        tipMsg.style.opacity = '0';
+        setTimeout(function () {
+          tipIndex = (tipIndex + 1) % muTips.length;
+          tipMsg.textContent = muTips[tipIndex];
+          tipMsg.style.opacity = '1';
+        }, 300);
+      }, 4200);
 
-            sendClientPacket(packet);
-        }
+      function setPreloaderProgress(percent, msg, detail) {
+        if (!barFill) return;
+        var p = Math.max(2, Math.min(100, percent));
+        barFill.style.width = p + '%';
+        if (msg && statusMsg) statusMsg.textContent = msg;
+        if (detail && statusDetail) statusDetail.textContent = detail;
+      }
 
-        function selectCharacter() {
-            appendLog('Вибір персонажа "HeroDK" та вхід у світ Lorencia...', '#a78bfa');
-            const packet = new Uint8Array(14);
-            packet[0] = 0xC1;
-            packet[1] = 14;
-            packet[2] = 0xF3;
-            packet[3] = 0x03;
-            const name = "HeroDK";
-            for (let i = 0; i < name.length; i++) packet[4 + i] = name.charCodeAt(i);
+      function finishPreloader() {
+        if (!preloader || preloader._finished) return;
+        preloader._finished = true;
+        setPreloaderProgress(100, "Entering Lorencia...", "100%");
+        clearInterval(tipInterval);
+        setTimeout(function () {
+          preloader.classList.add('fade-out');
+          setTimeout(function () {
+            preloader.style.display = 'none';
+          }, 650);
+        }, 350);
+      }
 
-            sendClientPacket(packet);
-            document.getElementById('btnWalk').disabled = false;
-            document.getElementById('btnAttack').disabled = false;
-        }
-
-        function sendWalk() {
-            appendLog('Гравець крокує до координат (126, 126)...', '#60a5fa');
-            const packet = new Uint8Array([0xC1, 0x08, 0xD4, 125, 125, 0x11, 126, 126]);
-            sendClientPacket(packet);
-        }
-
-        function sendAttack() {
-            appendLog('Гравець атакує монстра (ID: 0)...', '#ef4444');
-            const packet = new Uint8Array([0xC1, 0x07, 0x11, 0x00, 0x00, 0x00, 0x00]);
-            sendClientPacket(packet);
-        }
-
-        window.addEventListener('load', init);
+      window.onerror = function (msg, src, line, col, err) {
+        logElement.textContent += 'ONERR ' + msg + '\n' + (err && err.stack ? err.stack : '') + '\n';
+        var mErr = document.getElementById('muStatusMsg');
+        if (mErr) { mErr.style.color = '#ef4444'; mErr.textContent = 'Loading error. Please refresh the page.'; }
+      };
+      var Module = {
+        HEAPU8: null,
+        print: function () {
+          console.log(Array.prototype.slice.call(arguments).join(' '));
+        },
+        printErr: function () {
+          var text = Array.prototype.slice.call(arguments).join(' ');
+          console.error(text);
+          var lines = logElement.textContent ? logElement.textContent.split('\n') : [];
+          lines.push(text);
+          if (lines.length > 40) lines = lines.slice(lines.length - 40);
+          logElement.textContent = lines.join('\n');
+        },
+        canvas: canvasElement,
+        onRuntimeInitialized: function () {
+          finishPreloader();
+          if (window.soloBridge && window.soloBridge.flushQueue) window.soloBridge.flushQueue();
+          if (window.muInstallKeys) window.muInstallKeys();
+          if (window.muInstallTouch) window.muInstallTouch();
+          if (window.muInstallPad) window.muInstallPad();
+          if (window.muInstallAudio) window.muInstallAudio();
+        },
+        setStatus: function (text) {
+          if (statusElement) statusElement.textContent = text;
+          if (!text) {
+            finishPreloader();
+            return;
+          }
+          var m = text.match(/([^(]+)\((\d+(\.\d+)?)\/(\d+)\)/);
+          if (m) {
+            var current = parseInt(m[2]);
+            var total = parseInt(m[4]);
+            var pct = Math.round((current / total) * 100);
+            var curMb = (current / (1024 * 1024)).toFixed(1);
+            var totMb = (total / (1024 * 1024)).toFixed(1);
+            setPreloaderProgress(pct, "Downloading game assets...", curMb + " / " + totMb + " MB (" + pct + "%)");
+          } else if (text.indexOf('Preparing') !== -1) {
+            setPreloaderProgress(92, "Compiling WebAssembly engine...", "92%");
+          } else if (text.indexOf('Running') !== -1) {
+            finishPreloader();
+          } else {
+            setPreloaderProgress(50, text, "");
+          }
+        },
+        locateFile: function (path) { return path + '?t=login100'; },
+        preRun: [function () {
+          var orig = FS.lookupPath;
+          function child(node, name) {
+            if (!node || !node.contents) return null;
+            if (node.contents[name]) return { name: name, node: node.contents[name] };
+            var want = name.toLowerCase();
+            for (var k in node.contents) {
+              if (k.toLowerCase() === want) return { name: k, node: node.contents[k] };
+            }
+            return null;
+          }
+          FS.lookupPath = function (path, opts) {
+            if (typeof path === 'string') path = path.split('\\').join('/');
+            var exact;
+            try {
+              exact = orig(path, opts);
+            } catch (err) {
+              if (!err || err.errno !== 44) throw err;
+              exact = null;
+            }
+            if (exact && exact.node) return exact;
+            var abs = PATH.isAbs(path) ? path : (FS.cwd() + '/' + path);
+            var parts = abs.split('/').filter(function (p) { return p && p !== '.'; });
+            var node = FS.root;
+            var built = [];
+            for (var i = 0; i < parts.length; i++) {
+              if (parts[i] === '..') {
+                built.pop();
+                node = (node && node.parent) || FS.root;
+                continue;
+              }
+              var hit = child(node, parts[i]);
+              if (!hit) {
+                if (exact) return exact;
+                throw new FS.ErrnoError(44);
+              }
+              built.push(hit.name);
+              node = hit.node;
+              if (node && node.mounted && node.mounted.root && i !== parts.length - 1)
+                node = node.mounted.root;
+            }
+            return orig('/' + built.join('/'), opts);
+          };
+        }]
+      };
     </script>
-</body>
+    <script async type="text/javascript" src="shell_login.js?t=login100"></script>
+  </body>
 </html>

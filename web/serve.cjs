@@ -31,6 +31,7 @@ const server = http.createServer((req, res) => {
 
     fs.stat(filePath, (err, stats) => {
         if (err) {
+            console.warn('[HTTP 404]', req.url);
             res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
             res.end('404 Not Found');
             return;
@@ -75,8 +76,7 @@ function serveFileStream(filePath, stats, res) {
 }
 
 server.listen(PORT, '127.0.0.1', () => {
-    console.log(`MU Server & Client Web Runner live at: http://127.0.0.1:${PORT}`);
-    console.log(`- Web Testbed & Server Dashboard : http://127.0.0.1:${PORT}/`);
-    console.log(`- 3D WebGL2 WASM Game Client     : http://127.0.0.1:${PORT}/client/`);
+    console.log(`MU Online Solo Classic live at: http://127.0.0.1:${PORT}/`);
+    console.log(`- 3D WebGL2 Game Client & In-Browser Server: http://127.0.0.1:${PORT}/`);
 });
 

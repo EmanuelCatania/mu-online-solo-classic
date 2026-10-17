@@ -88,7 +88,7 @@ function writeVirtualSaveFiles(savesMap) {
             Module.FS.writeFile('/saves/' + file, bytes);
             count++;
         }
-        log(`[Worker] Відновлено ${count} файл(ів) у /saves`, '#34d399');
+        log(`[Worker] Restored ${count} save file(s) in /saves`, '#34d399');
     } catch (err) {
         log(`[Worker] Error writing /saves: ${err.message}`, '#f87171');
     }
@@ -138,7 +138,7 @@ async function exportEncryptedSaves() {
             payload: btoa(cipherBinary)
         };
     } catch (err) {
-        log(`[Vault] Помилка шифрування сейву: ${err.message}`, '#ef4444');
+        log(`[Vault] Save encryption error: ${err.message}`, '#ef4444');
         return null;
     }
 }
@@ -149,12 +149,12 @@ async function importEncryptedSaves(container) {
     try {
         // 1. Backward compatibility: handle legacy unencrypted save
         if (!container.magic && typeof container === 'object') {
-            log('[Vault] Знайдено нешифрований сейв (legacy). Відновлюємо...', '#fbbf24');
+            log('[Vault] Found unencrypted save (legacy). Restoring...', '#fbbf24');
             return writeVirtualSaveFiles(container);
         }
 
         if (container.magic !== VAULT_MAGIC) {
-            throw new Error(`Невідомий формат файлу (очікувався заголовок ${VAULT_MAGIC})`);
+            throw new Error(`Unknown file format (expected header ${VAULT_MAGIC})`);
         }
 
         // 2. Decode ciphertext bytes
@@ -171,7 +171,7 @@ async function importEncryptedSaves(container) {
             .join('');
 
         if (hashHex !== container.checksum) {
-            throw new Error("Сейв пошкоджено або змінено в текстовому редакторі (невідповідність контрольної суми SHA-256)!");
+            throw new Error("Save corrupted or modified in text editor (SHA-256 checksum mismatch)!");
         }
 
         // 4. Decode IV
@@ -191,7 +191,7 @@ async function importEncryptedSaves(container) {
                 cipherBytes
             );
         } catch (decryptErr) {
-            throw new Error("Помилка автентифікації AES-GCM: вміст сейву було модифіковано або підроблено!");
+            throw new Error("AES-GCM authentication failed: save content was modified or tampered with!");
         }
 
         const jsonStr = new TextDecoder().decode(decryptedBuffer);
@@ -199,7 +199,7 @@ async function importEncryptedSaves(container) {
 
         return writeVirtualSaveFiles(rawFiles);
     } catch (err) {
-        log(`[Vault] ❌ Помилка дешифрування: ${err.message}`, '#ef4444');
+        log(`[Vault] ❌ Decryption error: ${err.message}`, '#ef4444');
         self.postMessage({ type: 'SAVE_INTEGRITY_ERROR', message: err.message });
         return 0;
     }
@@ -242,6 +242,8 @@ async function initServer(initialSaves = null, difficulty = 0) {
         // Register outgoing packet callback (Server -> Client)
         const sendCallback = Module.addFunction((ptr, size) => {
             const bytes = new Uint8Array(Module.HEAPU8.subarray(ptr, ptr + size));
+            const hex = Array.from(bytes.slice(0, Math.min(8, size))).map(b => b.toString(16).padStart(2, '0')).join(' ');
+            log(`[Worker] Server sent ${size} bytes to client (${hex})`, '#34d399');
             self.postMessage({
                 type: 'PACKET_FROM_SERVER',
                 data: Array.from(bytes),
@@ -321,7 +323,7 @@ self.onmessage = async function (e) {
             if (Module && Module._SoloServer_SetDifficulty) {
                 Module._SoloServer_SetDifficulty(mode);
                 const modeNames = ['Easy (300x)', 'Medium (100x)', 'Hard (30x)'];
-                log(`[Worker] Рівень складності встановлено: ${modeNames[mode] || mode}`, '#34d399');
+                log(`[Worker] Difficulty set to: ${modeNames[mode] || mode}`, '#34d399');
                 self.postMessage({
                     type: 'DIFFICULTY_SET',
                     mode: mode
@@ -338,7 +340,7 @@ self.onmessage = async function (e) {
                 Module._SoloServer_SetDifficulty(mode);
             }
             const modeNames = ['Easy (300x)', 'Medium (100x)', 'Hard (30x)'];
-            log(`[Worker] Реалм перемкнено на: ${modeNames[mode]}. Завантажено ${count} файл(ів) сейву.`, '#34d399');
+            log(`[Worker] Realm switched to: ${modeNames[mode]}. Loaded ${count} save file(s).`, '#34d399');
             self.postMessage({
                 type: 'REALM_SWITCHED',
                 mode: mode,
@@ -371,6 +373,7 @@ self.onmessage = async function (e) {
 
         case 'SEND_PACKET': {
             const rawBytes = new Uint8Array(payload.bytes);
+            log(`[Worker] SEND_PACKET from client: ${rawBytes.length} bytes, hdr=0x${rawBytes[0].toString(16)}`, '#38bdf8');
             const ptr = Module._malloc(rawBytes.length);
             Module.HEAPU8.set(rawBytes, ptr);
             Module._SoloServer_ReceiveClientPacket(ptr, rawBytes.length);

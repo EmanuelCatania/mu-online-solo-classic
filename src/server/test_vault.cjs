@@ -86,7 +86,7 @@ async function decryptSave(container) {
         .join('');
 
     if (hashHex !== container.checksum) {
-        throw new Error("Сейв пошкоджено або змінено стороннім редактором (невідповідність контрольної суми SHA-256)!");
+        throw new Error("Save corrupted or modified in text editor (SHA-256 checksum mismatch)!");
     }
 
     const ivBuffer = Buffer.from(container.iv, 'base64');
@@ -101,7 +101,7 @@ async function decryptSave(container) {
             cipherBytes
         );
     } catch (e) {
-        throw new Error("Помилка автентифікації AES-GCM: вміст сейву було модифіковано або підроблено!");
+        throw new Error("AES-GCM authentication failed: save content was modified or tampered with!");
     }
 
     const jsonStr = new TextDecoder().decode(decryptedBuffer);
@@ -109,20 +109,20 @@ async function decryptSave(container) {
 }
 
 (async () => {
-    console.log("=== Тестування сховища сейвів AES-256-GCM ===");
+    console.log("=== Testing Save Vault AES-256-GCM ===");
 
-    // 1. Створюємо тестовий сейв
+    // 1. Create test save
     const originalSave = {
         "account_solo.dat": Buffer.from("SOLO_ACCOUNT_DATA_STRUCT").toString('base64'),
         "char_HeroDK.dat": Buffer.from("HERO_DK_LEVEL_150_STATS").toString('base64'),
         "warehouse_solo.dat": Buffer.from("WAREHOUSE_CHAOS_BLESS_SOUL").toString('base64')
     };
 
-    console.log("1. Оригінальні файли:", Object.keys(originalSave));
+    console.log("1. Original files:", Object.keys(originalSave));
 
-    // 2. Шифруємо
+    // 2. Encrypt
     const encrypted = await encryptSave(originalSave);
-    console.log("2. Зашифрований контейнер:", {
+    console.log("2. Encrypted container:", {
         magic: encrypted.magic,
         version: encrypted.version,
         algorithm: encrypted.algorithm,
@@ -131,46 +131,44 @@ async function decryptSave(container) {
         payloadLen: encrypted.payload.length
     });
 
-    // 3. Дешифруємо та перевіряємо
+    // 3. Decrypt and verify
     const decrypted = await decryptSave(encrypted);
-    console.log("3. Успішно дешифровано:", Object.keys(decrypted));
+    console.log("3. Successfully decrypted:", Object.keys(decrypted));
     if (JSON.stringify(originalSave) === JSON.stringify(decrypted)) {
-        console.log("✅ Результат повністю збігається з оригіналом!");
+        console.log("✅ Decrypted result matches original exactly!");
     } else {
-        console.error("❌ Помилка: дані не збігаються!");
+        console.error("❌ Error: data mismatch!");
     }
 
-    // 4. Тест підробки (зміна байту в payload)
-    console.log("\n4. Тест виявлення спроби читерства / редагування в Блокноті:");
+    // 4. Tamper test (modify byte in payload)
+    console.log("\n4. Tamper detection test (external text editor modification):");
     const tampered = JSON.parse(JSON.stringify(encrypted));
-    // Змінюємо 1 символ у зашифрованому рядку
     const chars = tampered.payload.split('');
     chars[10] = chars[10] === 'A' ? 'B' : 'A';
     tampered.payload = chars.join('');
 
     try {
         await decryptSave(tampered);
-        console.error("❌ Помилка: підробка не була виявлена!");
+        console.error("❌ Error: tampering was not detected!");
     } catch (err) {
-        console.log("✅ Успішно заблоковано змінений сейв:", err.message);
+        console.log("✅ Successfully blocked tampered save:", err.message);
     }
 
-    // 5. Тест підробки без оновлення ключа (зміна і хешу, і пейлоаду)
-    console.log("\n5. Тест підробки з перерахованим хешем без валідного ключа шифрування:");
+    // 5. Tamper test with forged hash
+    console.log("\n5. Tamper test with recomputed hash without valid encryption key:");
     const tampered2 = JSON.parse(JSON.stringify(encrypted));
     const tamperedBytes = Buffer.from(tampered2.payload, 'base64');
     tamperedBytes[5] ^= 0xFF; // Flip bit
     tampered2.payload = tamperedBytes.toString('base64');
-    // Обчислюємо новий хеш (наче читер перерахував хеш)
     const hash = require('crypto').createHash('sha256').update(tamperedBytes).digest('hex');
     tampered2.checksum = hash;
 
     try {
         await decryptSave(tampered2);
-        console.error("❌ Помилка: AES-GCM пропустив підробку!");
+        console.error("❌ Error: AES-GCM accepted forged data!");
     } catch (err) {
-        console.log("✅ Успішно заблоковано через автентифікацію AES-GCM:", err.message);
+        console.log("✅ Successfully blocked via AES-GCM authentication:", err.message);
     }
 
-    console.log("\nВсі криптографічні тести успішно пройдено! 🛡️");
+    console.log("\nAll cryptographic tests passed successfully! 🛡️");
 })();

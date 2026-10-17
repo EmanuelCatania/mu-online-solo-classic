@@ -9,7 +9,14 @@ if(NOT EMSCRIPTEN)
         "emcmake cmake -S emscripten_port -B emscripten_port/build -G Ninja")
 endif()
 
-set(MU97K_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/../reference/Mu-97k-Client-Source")
+if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/src")
+    set(MU97K_ROOT "${CMAKE_CURRENT_SOURCE_DIR}")
+elseif(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/../reference/Mu-97k-Client-Source")
+    set(MU97K_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/../reference/Mu-97k-Client-Source")
+else()
+    set(MU97K_ROOT "${CMAKE_CURRENT_SOURCE_DIR}")
+endif()
+
 
 set(JPEG_SOURCES
     jpeg-6b/jcapimin.c

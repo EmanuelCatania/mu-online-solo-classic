@@ -5,6 +5,8 @@
 #include "ServerDisplayer.h"
 #include "Util.h"
 #include "Log.h"
+#include "PacketManager.h"
+#include "SerialCheck.h"
 
 CSocketManager gSocketManager;
 
@@ -90,13 +92,39 @@ bool CSocketManager::DataSend(int index, BYTE* lpMsg, int size)
 		return false;
 	}
 
-	SoloTransport_SendToClient(index, lpMsg, size);
+	BYTE send[MAX_MAIN_PACKET_SIZE];
+	memcpy(send, lpMsg, size);
+
+	if (lpMsg[0] == 0xC3 || lpMsg[0] == 0xC4)
+	{
+		if (lpMsg[0] == 0xC3)
+		{
+			BYTE save = lpMsg[1];
+			lpMsg[1] = (OBJECT_USER_RANGE(index)) ? gSerialCheck[index].GetSendSerial() : 0;
+			size = gPacketManager.Encrypt(&send[2], &lpMsg[1], (size - 1)) + 2;
+			lpMsg[1] = save;
+			send[0] = 0xC3;
+			send[1] = size;
+		}
+		else
+		{
+			BYTE save = lpMsg[2];
+			lpMsg[2] = (OBJECT_USER_RANGE(index)) ? gSerialCheck[index].GetSendSerial() : 0;
+			size = gPacketManager.Encrypt(&send[3], &lpMsg[2], (size - 2)) + 3;
+			lpMsg[2] = save;
+			send[0] = 0xC4;
+			send[1] = HIBYTE(size);
+			send[2] = LOBYTE(size);
+		}
+	}
+
+	SoloTransport_SendToClient(index, send, size);
 	return true;
 }
 
 void CSocketManager::Disconnect(int index)
 {
-	if (OBJECT_USER_RANGE(index) && gObjIsConnected(index))
+	if (OBJECT_USER_RANGE(index) && gObj[index].Connected != OBJECT_OFFLINE)
 	{
 		gObjDel(index);
 		if (g_SoloPlayerIndex == index)

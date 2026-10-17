@@ -1,0 +1,120 @@
+#pragma once
+
+#ifdef __EMSCRIPTEN__
+// Browser preamble. Winsock, GDI, and DirectSound stay on the MSVC path.
+// mu_emscripten.h and the compat headers come from the Emscripten include path.
+#include <mu_emscripten.h>
+#else
+// WinSock2 must come before windows.h
+#include <winsock2.h>
+#include <ws2tcpip.h>
+
+// Win32
+#define WIN32_LEAN_AND_MEAN
+#define NOMINMAX
+#include <windows.h>
+#include <mmsystem.h>
+#include <dsound.h>
+#endif
+
+// OpenGL (legacy fixed-function pipeline, same as original)
+#include <gl/gl.h>
+#include <gl/glu.h>
+
+#ifdef __EMSCRIPTEN__
+// Desktop GL accepts 1, 2, 3, and 4 as unsized internal formats.
+// WebGL 2 rejects them, so a texture uploaded that way stays black.
+inline GLint mu_gl_internal(GLint fmt) {
+    if (fmt == 1) return 0x1909;
+    if (fmt == 2) return 0x190A;
+    if (fmt == 3) return 0x1907;
+    if (fmt == 4) return 0x1908;
+    return fmt;
+}
+inline void mu_glTexImage2D(GLenum target, GLint level, GLint internalFormat,
+                            GLsizei width, GLsizei height, GLint border,
+                            GLenum format, GLenum type, const void* pixels) {
+    ::glTexImage2D(target, level, mu_gl_internal(internalFormat),
+                   width, height, border, format, type, pixels);
+}
+#define glTexImage2D mu_glTexImage2D
+#endif
+
+#ifndef __EMSCRIPTEN__
+// CRT debug heap — enable BEFORE stdlib.h to track all malloc/new sites
+// _CRTDBG_MAP_ALLOC redirige new/malloc al debug heap con file/line tracking.
+// Los flags de validación (_CRTDBG_CHECK_EVERY_1024_DF) se setean en WinMain.
+#ifdef _DEBUG
+  #define _CRTDBG_MAP_ALLOC
+#endif
+#endif
+
+// CRT
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <math.h>
+#include <time.h>
+#ifndef __EMSCRIPTEN__
+#include <crtdbg.h>
+#endif
+
+// libjpeg 6b (IJG)
+// XMD_H prevents jmorecfg.h from redefining INT32 (already in basetsd.h)
+#define XMD_H
+#undef FAR
+extern "C" {
+#include "jpeglib.h"
+}
+#undef FAR
+#define FAR
+
+// Ghidra intrinsic stubs (not available in MSVC)
+#define _rand() rand()
+static inline long long __ftol() { return (long long)GetTickCount(); }
+static inline double    fsin(double x) { return sin(x); }
+#ifndef SQRT
+#define SQRT sqrtf
+#endif
+#ifndef fcos
+#define fcos cosf
+#endif
+
+// -----------------------------------------------------------------------
+// Game state (SceneFlag)
+// State 1 = Intro (Webzen logo)
+// State 2 = Login
+// State 3 = Loading
+// State 4 = CharSelect
+// State 5 = InGame
+// -----------------------------------------------------------------------
+extern int SceneFlag; // IDA: SceneFlag (0x005615C0)
+
+// Ventana, instancia, DC de OpenGL (el que recibe SwapBuffers) y tamaño:
+// CWindow (Core/Window.h), a través de gWindow. IDA: g_hWnd 0x055C9FFC,
+// g_hInst 0x055CA000, g_hDC 0x055CA004, WindowWidth/Height 0x0056156C/70.
+// Fuentes y DC de memoria del texto: CFont (Core/Font.h), a través de gFont.
+// El DC de OpenGL NO es el DC de memoria del texto (gFont.GetTextDC()).
+#include "Core/Window.h"
+#include "Net/Network.h"
+#include "Core/Font.h"
+#include "Game/MapManager.h"
+
+// ── Primitive type aliases (Ghidra pseudo-types) ─────────────────────────────
+#include "types.h"
+
+// ── Game type definitions (structs, enums, constants) ────────────────────────
+#include "structs.h"
+#include "ghidra_compat.h"   // macros del decompile (LODWORD, qmemcpy, ...)
+
+// ── All DAT_ globals and FUN_ forward declarations ──────────────────────────
+#include "globals.h"
+#include "functions.h"
+
+// ── MuEmu auto-encrypt send() hook ──────────────────────────────────────────
+// Redirect every send() call to our MuEmu_send_hook which auto-applies
+// MuEmu::EncryptSend if the buffer starts with a plain MuEmu header byte.
+// This is a SAFETY NET — explicit MuEmu::EncryptSend calls in send paths
+// must still happen.  See src/Net/MuEmu.cpp for the wrapper body.
+#include "Net/MuEmu.h"
+#define send(s, buf, len, flags)  MuEmu_send_hook((s), (buf), (len), (flags))

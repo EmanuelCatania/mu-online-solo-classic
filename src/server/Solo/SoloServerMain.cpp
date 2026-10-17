@@ -14,6 +14,7 @@
 #include "Protocol.h"
 #include "MonsterManager.h"
 #include "SoloDifficulty.h"
+#include "PacketManager.h"
 
 static bool g_SoloServerInitialized = false;
 
@@ -118,8 +119,8 @@ SOLO_API int SoloServer_ConnectPlayer(const char* ipAddress)
 
 	SoloTransport_SetPlayerIndex(index);
 
-	// Send initial greeting packet
-	GCConnectAccountSend(index, 1);
+	// Send initial greeting packet (F1 00 Connect Client / JoinServer)
+	GCConnectClientSend(index, 1);
 	LogAdd(LOG_GREEN, "[SoloServer] Player session created: index %d", index);
 
 	return index;
@@ -127,7 +128,12 @@ SOLO_API int SoloServer_ConnectPlayer(const char* ipAddress)
 
 SOLO_API void SoloServer_DisconnectPlayer(int aIndex)
 {
-	if (OBJECT_USER_RANGE(aIndex) && gObjIsConnected(aIndex))
+	if (aIndex <= 0)
+	{
+		aIndex = SoloTransport_GetPlayerIndex();
+	}
+
+	if (OBJECT_USER_RANGE(aIndex) && gObj[aIndex].Connected != OBJECT_OFFLINE)
 	{
 		CloseClient(aIndex);
 	}
@@ -141,15 +147,72 @@ SOLO_API void SoloServer_ReceiveClientPacket(const uint8_t* data, int size)
 	}
 
 	int playerIndex = SoloTransport_GetPlayerIndex();
-	if (playerIndex < 0 || !OBJECT_USER_RANGE(playerIndex) || !gObjIsConnected(playerIndex))
+	if (playerIndex < 0 || !OBJECT_USER_RANGE(playerIndex) || gObj[playerIndex].Connected == OBJECT_OFFLINE)
 	{
 		LogAdd(LOG_RED, "[SoloServer] Received packet but player index %d is not connected", playerIndex);
 		return;
 	}
 
-	BYTE head = (data[0] == 0xC1 || data[0] == 0xC3) ? data[2] : data[3];
+	BYTE header = data[0];
+	BYTE DecBuff[MAX_MAIN_PACKET_SIZE];
+	int DecSize = 0;
+	BYTE DecSerial = 0;
+	BYTE head = 0;
 
-	ProtocolCore(head, const_cast<BYTE*>(data), size, playerIndex, 0, 0);
+	printf("[SoloServer] RecvPacket size=%d, header=0x%02X\n", size, data[0]);
+	fflush(stdout);
+
+	if (header == 0xC3 || header == 0xC4)
+	{
+		if (header == 0xC3)
+		{
+			DecSize = gPacketManager.Decrypt(&DecBuff[1], const_cast<BYTE*>(&data[2]), (size - 2)) + 1;
+			DecSerial = DecBuff[1];
+			header = 0xC1;
+			head = DecBuff[2];
+			DecBuff[0] = header;
+			DecBuff[1] = DecSize;
+
+			printf("[SoloServer] C3 Decrypt: DecSize=%d, DecSerial=%d, head=0x%02X, sub=0x%02X\n", DecSize, DecSerial, head, DecBuff[3]);
+			fflush(stdout);
+
+			if (!gPacketManager.AddData(&DecBuff[0], DecSize) || !gPacketManager.ExtractPacket(DecBuff))
+			{
+				printf("[SoloServer] Failed to extract C3 packet (size %d, decSize %d)\n", size, DecSize);
+				fflush(stdout);
+				LogAdd(LOG_RED, "[SoloServer] Failed to extract C3 packet (size %d, decSize %d)", size, DecSize);
+				return;
+			}
+
+			printf("[SoloServer] ProtocolCore dispatch: head=0x%02X, sub=0x%02X, DecSize=%d, serial=%d\n", head, DecBuff[3], DecSize, DecSerial);
+			fflush(stdout);
+
+			ProtocolCore(head, DecBuff, DecSize, playerIndex, 1, DecSerial);
+		}
+		else
+		{
+			DecSize = gPacketManager.Decrypt(&DecBuff[2], const_cast<BYTE*>(&data[3]), (size - 3)) + 2;
+			DecSerial = DecBuff[2];
+			header = 0xC2;
+			head = DecBuff[3];
+			DecBuff[0] = header;
+			DecBuff[1] = HIBYTE(DecSize);
+			DecBuff[2] = LOBYTE(DecSize);
+
+			if (!gPacketManager.AddData(DecBuff, DecSize) || !gPacketManager.ExtractPacket(DecBuff))
+			{
+				LogAdd(LOG_RED, "[SoloServer] Failed to extract C4 packet (size %d, decSize %d)", size, DecSize);
+				return;
+			}
+
+			ProtocolCore(head, DecBuff, DecSize, playerIndex, 1, DecSerial);
+		}
+	}
+	else
+	{
+		head = (header == 0xC1) ? data[2] : data[3];
+		ProtocolCore(head, const_cast<BYTE*>(data), size, playerIndex, 0, -1);
+	}
 }
 
 SOLO_API void SoloServer_SetSendCallback(void (*callback)(const uint8_t* data, int size))

@@ -126,5 +126,8 @@ void CLog::Output(eLogType type, const char* text, ...)
 		std::fputs(buff, lpInfo->File);
 		std::fflush(lpInfo->File);
 	}
+
+	std::fputs(buff, stdout);
+	std::fflush(stdout);
 }
 

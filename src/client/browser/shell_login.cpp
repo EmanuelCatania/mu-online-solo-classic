@@ -10,6 +10,7 @@
 #include "Config/ServerConfig.h"
 #include "Config/UserSettings.h"
 #include "Net/Network.h"
+#include "Net/MuEmu.h"
 #include "Sound/SoundManager.h"
 #include "Scene/Scene_Dispatch.h"
 #include "Scene/Scene_Login.h"
@@ -19,6 +20,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 
 extern "C" short Mu_AsyncKeyState[256] = {};
 extern "C" void mu_mesh_flush(void);
@@ -493,8 +495,9 @@ int main(void) {
         Config_ReadServerAddr(NULL, NULL, g_ServerIPBuf, &port);
         lstrcpynA(g_ServerIPBuf, "127.0.0.1", 128);
         szServerIpAddress = g_ServerIPBuf;
-        g_ServerPort = ServerConfig::ConnectServerPort ? ServerConfig::ConnectServerPort : 44405;
-        gNetwork.SetConnectServer(true);
+        g_ServerPort = 55901;
+        gNetwork.SetConnectServer(false); // Solo offline mode: direct to in-memory GameServer
+        MuEmu::SetActive(false); // Solo offline mode uses raw standard MU packets
         printf("LOGIN local %s:%u lang=%d font=%d res=%ux%u\n",
                szServerIpAddress, (unsigned)g_ServerPort,
                gUserSettings.GetLanguage(), gUserSettings.GetFont().height,
@@ -528,16 +531,38 @@ int main(void) {
     if (lpString_07d4aed4[0] == 0) strcpy(lpString_07d4aed4, "OK");
     if (lpString_07d4b000[0] == 0) strcpy(lpString_07d4b000, "Cancel");
 
+    // ── 3 Solo Difficulty Realms ──────────────────────────────────────────────
     memset(DAT_083a45d8, 0, sizeof(DAT_083a45d8));
     ServerSelectHi = (DWORD)-1;
     ServerSelectLo = (DWORD)-1;
-    if (!gNetwork.HasConnectServer()) {
-        char* srv0 = DAT_083a45d8;
-        memcpy(srv0, "MuServer", 9);
-        srv0[0x14] = 1;
-        *(unsigned short*)(srv0 + 0x2c) = 1;
-        srv0[0x2e] = 0;
-    }
+
+    // 🟢 Realm 0: Easy (300x EXP, High Drops, Reset Lvl 300)
+    char* srv0 = DAT_083a45d8 + 0 * 0x21e;
+    memcpy(srv0, "Arcadia [Easy]", 15);
+    srv0[0x14] = 1;                         // 1 channel
+    *(unsigned short*)(srv0 + 0x2c) = 0;   // channel_id 0 (Easy)
+    srv0[0x2e] = 25;                       // load 25% (green)
+
+    // 🟡 Realm 1: Medium (100x EXP, Classic Rates, Reset Lvl 400)
+    char* srv1 = DAT_083a45d8 + 1 * 0x21e;
+    memcpy(srv1, "Valhalla [Medium]", 18);
+    srv1[0x14] = 1;                         // 1 channel
+    *(unsigned short*)(srv1 + 0x2c) = 1;   // channel_id 1 (Medium)
+    srv1[0x2e] = 50;                       // load 50% (green)
+
+    // 🔴 Realm 2: Hard (30x EXP, Hardcore, Low Drops, Reset Lvl 400)
+    char* srv2 = DAT_083a45d8 + 2 * 0x21e;
+    memcpy(srv2, "Asgard [Hard]", 14);
+    srv2[0x14] = 1;                         // 1 channel
+    *(unsigned short*)(srv2 + 0x2c) = 2;   // channel_id 2 (Hard)
+    srv2[0x2e] = 75;                       // load 75% (green)
+
+    // WinMain fills RandomTable before anything else calls rand(). The browser
+    // never enters WinMain, so the table stayed zero and every Zen coin of a
+    // pile was placed on the same point.
+    srand((unsigned int)time(NULL));
+    for (int j = 0; j < 100; ++j)
+        RandomTable[j] = rand() % 360;
 
     GateAttribute = (DWORD)(uintptr_t)calloc(1, 900);
     DAT_07d29d20 = (int)(intptr_t)calloc(1, 0xa00);

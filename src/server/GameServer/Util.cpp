@@ -258,6 +258,9 @@ void LogAdd(eLogColor color, const char* text, ...)
 
 	wsprintf(log, "%.8s %s", &time[11], temp);
 
+	puts(log);
+	fflush(stdout);
+
 	gServerDisplayer.LogAddText(color, log, strlen(log));
 }
 

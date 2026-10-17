@@ -3,7 +3,10 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-    <title>MU 0.97k WebGL2 smoke</title>
+    <title>MU Online Solo Classic</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700;900&display=swap" rel="stylesheet">
     <style>
       body { font-family: sans-serif; background: #111; color: #eee; }
       canvas { background: #000; display: block; margin-top: 8px; }
@@ -58,9 +61,183 @@
       }
       #muRBtn.on { background: rgba(90,40,40,.9); }
       pre { white-space: pre-wrap; }
+
+      /* === Premium MU Online Classic Preloader === */
+      .mu-preloader {
+        position: fixed; inset: 0; z-index: 9999;
+        display: flex; align-items: center; justify-content: center;
+        background: #08090d;
+        color: #f1f5f9;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        user-select: none; -webkit-user-select: none;
+        transition: opacity 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+      .mu-preloader.fade-out {
+        opacity: 0; pointer-events: none;
+      }
+      .mu-preloader-bg {
+        position: absolute; inset: 0;
+        background: radial-gradient(circle at 50% 40%, rgba(180, 83, 9, 0.22) 0%, rgba(15, 23, 42, 0.8) 55%, #050608 100%);
+        pointer-events: none;
+      }
+      .mu-preloader-glow {
+        position: absolute; width: 440px; height: 440px; border-radius: 50%;
+        background: radial-gradient(circle, rgba(245, 158, 11, 0.16) 0%, transparent 70%);
+        animation: muPulse 4s ease-in-out infinite alternate;
+        pointer-events: none;
+      }
+      @keyframes muPulse {
+        0% { transform: scale(0.9); opacity: 0.6; }
+        100% { transform: scale(1.18); opacity: 1; }
+      }
+      .mu-preloader-card {
+        position: relative; z-index: 1;
+        display: flex; flex-direction: column; align-items: center;
+        width: min(92vw, 460px);
+        padding: 34px 26px 28px;
+        background: rgba(13, 16, 26, 0.82);
+        border: 1px solid rgba(245, 158, 11, 0.35);
+        border-radius: 18px;
+        box-shadow: 0 12px 48px rgba(0, 0, 0, 0.85), 0 0 30px rgba(217, 119, 6, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+        backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+        text-align: center;
+      }
+      .mu-crest-container {
+        width: 86px; height: 86px; margin-bottom: 14px;
+        filter: drop-shadow(0 0 18px rgba(245, 158, 11, 0.55));
+        animation: muCrestFloat 3.5s ease-in-out infinite alternate;
+      }
+      @keyframes muCrestFloat {
+        0% { transform: translateY(0px); }
+        100% { transform: translateY(-5px); }
+      }
+      .mu-crest-svg {
+        width: 100%; height: 100%; display: block;
+      }
+      .mu-preloader-title {
+        margin: 0 0 4px;
+        font-family: 'Cinzel', 'Trajan Pro', 'Palatino Linotype', 'Georgia', serif;
+        font-size: 34px; font-weight: 900; letter-spacing: 6px; line-height: 1.1;
+        background: linear-gradient(180deg, #fffbeb 0%, #fef08a 25%, #f59e0b 65%, #b45309 100%);
+        -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+        filter: drop-shadow(0 2px 8px rgba(0,0,0,0.85)) drop-shadow(0 0 20px rgba(245, 158, 11, 0.45));
+      }
+      .mu-preloader-sub {
+        font-size: 11px; font-weight: 700; letter-spacing: 4px;
+        color: #cbd5e1; text-transform: uppercase;
+        margin-bottom: 24px;
+        text-shadow: 0 0 8px rgba(245, 158, 11, 0.4);
+      }
+      .mu-progress-box {
+        width: 100%; margin-bottom: 18px;
+      }
+      .mu-progress-meta {
+        display: flex; justify-content: space-between; align-items: baseline;
+        font-size: 12px; font-weight: 500; color: #94a3b8;
+        margin-bottom: 8px; padding: 0 2px;
+      }
+      #muStatusMsg {
+        color: #e2e8f0; font-weight: 600; text-overflow: ellipsis; overflow: hidden; white-space: nowrap; max-width: 65%;
+      }
+      #muStatusDetail {
+        color: #f59e0b; font-family: monospace; font-size: 13px; font-weight: 700;
+      }
+      .mu-bar-track {
+        width: 100%; height: 16px;
+        background: rgba(8, 10, 15, 0.95);
+        border: 1px solid rgba(245, 158, 11, 0.45);
+        border-radius: 8px;
+        padding: 2px;
+        box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.9), 0 0 10px rgba(217, 119, 6, 0.2);
+        overflow: hidden;
+      }
+      .mu-bar-fill {
+        height: 100%; width: 2%;
+        border-radius: 5px;
+        background: linear-gradient(90deg, #b45309 0%, #f59e0b 50%, #fef08a 100%);
+        box-shadow: 0 0 12px rgba(245, 158, 11, 0.85);
+        transition: width 0.2s ease-out;
+        position: relative; overflow: hidden;
+      }
+      .mu-bar-light {
+        position: absolute; inset: 0;
+        background: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.5) 50%, transparent 100%);
+        animation: muShimmer 2s infinite linear;
+      }
+      @keyframes muShimmer {
+        0% { transform: translateX(-100%); }
+        100% { transform: translateX(100%); }
+      }
+      .mu-tips-box {
+        display: flex; align-items: center; gap: 8px;
+        width: 100%; min-height: 40px; padding: 8px 12px;
+        background: rgba(15, 23, 42, 0.6);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 8px;
+        font-size: 11.5px; line-height: 1.4; color: #cbd5e1;
+        text-align: left;
+      }
+      .mu-tip-icon { font-size: 14px; flex-shrink: 0; }
+      .mu-tip-msg {
+        flex: 1; transition: opacity 0.3s ease;
+      }
     </style>
   </head>
   <body>
+    <!-- Fullscreen MU Preloader -->
+    <div id="muPreloader" class="mu-preloader">
+      <div class="mu-preloader-bg"></div>
+      <div class="mu-preloader-glow"></div>
+      <div class="mu-preloader-card">
+        <div class="mu-crest-container">
+          <svg class="mu-crest-svg" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <linearGradient id="crestGold" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#fffbeb"/>
+                <stop offset="30%" stop-color="#fde047"/>
+                <stop offset="70%" stop-color="#d97706"/>
+                <stop offset="100%" stop-color="#78350f"/>
+              </linearGradient>
+              <linearGradient id="jewelRed" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#f87171"/>
+                <stop offset="50%" stop-color="#dc2626"/>
+                <stop offset="100%" stop-color="#7f1d1d"/>
+              </linearGradient>
+              <filter id="muGlow" x="-20%" y="-20%" width="140%" height="140%">
+                <feGaussianBlur stdDeviation="2.5" result="blur" />
+                <feComposite in="SourceGraphic" in2="blur" operator="over" />
+              </filter>
+            </defs>
+            <path d="M50 8 L58 24 L78 22 L66 38 L82 48 L64 56 L68 76 L50 64 L32 76 L36 56 L18 48 L34 38 L22 22 L42 24 Z" fill="url(#crestGold)" filter="url(#muGlow)"/>
+            <path d="M28 20 L72 80 M72 20 L28 80" stroke="url(#crestGold)" stroke-width="2.5" stroke-linecap="round"/>
+            <polygon points="50,22 68,36 62,68 50,78 38,68 32,36" fill="#141724" stroke="url(#crestGold)" stroke-width="2"/>
+            <polygon points="50,38 60,50 50,62 40,50" fill="url(#jewelRed)" stroke="#fef08a" stroke-width="1.2"/>
+            <circle cx="50" cy="50" r="3" fill="#ffffff" opacity="0.85"/>
+          </svg>
+        </div>
+
+        <h1 class="mu-preloader-title">MU ONLINE</h1>
+        <div class="mu-preloader-sub">SOLO CLASSIC 0.97k</div>
+
+        <div class="mu-progress-box">
+          <div class="mu-progress-meta">
+            <span id="muStatusMsg">Initializing client...</span>
+            <span id="muStatusDetail">0%</span>
+          </div>
+          <div class="mu-bar-track">
+            <div id="muBarFill" class="mu-bar-fill" style="width: 3%;">
+              <div class="mu-bar-light"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="mu-tips-box">
+          <span class="mu-tip-icon">⚔️</span>
+          <span id="muTipText" class="mu-tip-msg">Loading game assets...</span>
+        </div>
+      </div>
+    </div>
+
     <div id="status">Starting…</div>
     <pre id="log"></pre>
     <canvas id="canvas" width="640" height="480" tabindex="-1" oncontextmenu="return false"></canvas>
@@ -388,11 +565,218 @@
         document.addEventListener('visibilitychange', sync);
         sync();
       };
+
+      // ── Zero-Network In-Memory Bridge to GameServer Web Worker ────────────
+      (function () {
+        var worker = null;
+        var workerReady = false;
+        var currentRealm = 0;
+        var pendingConnectRealm = null;
+        var incomingQueue = [];
+
+        function getSaveKey(realm) {
+          return 'mu_solo_realm_' + (realm !== undefined ? realm : currentRealm) + '_vault';
+        }
+
+        function loadSavedContainer(realm) {
+          try {
+            const raw = localStorage.getItem(getSaveKey(realm));
+            if (raw) {
+              const parsed = JSON.parse(raw);
+              if (parsed && typeof parsed === 'object') return parsed;
+            }
+          } catch (e) {
+            console.error('[SoloBridge] Failed to load save container:', e);
+          }
+          return null;
+        }
+
+        function deliverPacketToClient(bytes) {
+          var heap = null;
+          try {
+            heap = (typeof window !== 'undefined' && window.HEAPU8) || (typeof Module !== 'undefined' && Module.HEAPU8);
+          } catch (e) {}
+          if (typeof Module !== 'undefined' && Module._mu_net_push_packet && Module._mu_net_get_push_buffer && heap) {
+            const ptr = Module._mu_net_get_push_buffer();
+            heap.set(bytes, ptr);
+            Module._mu_net_push_packet(bytes.length);
+          } else {
+            incomingQueue.push(bytes);
+          }
+        }
+
+        function initServerWorker(difficulty) {
+          if (difficulty === undefined) difficulty = 0;
+          if (worker) return;
+          currentRealm = difficulty;
+          console.log('[SoloBridge] Initializing Server Web Worker for difficulty realm:', difficulty);
+          worker = new Worker('server_worker.js');
+
+          worker.onmessage = function (e) {
+            const msg = e.data;
+            if (!msg) return;
+
+            if (msg.type === 'LOG') {
+              console.log(`%c[SoloServer] ${msg.message}`, `color: ${msg.color || '#60a5fa'}`);
+            } else if (msg.type === 'SERVER_READY') {
+              console.log('[SoloBridge] Solo GameServer is READY! Monsters:', msg.monsters, 'Realm:', msg.difficulty);
+              workerReady = true;
+              if (pendingConnectRealm !== null) {
+                const r = pendingConnectRealm;
+                pendingConnectRealm = null;
+                window.soloBridge.connect(r);
+              }
+            } else if (msg.type === 'PACKET_FROM_SERVER') {
+              deliverPacketToClient(new Uint8Array(msg.data));
+            } else if (msg.type === 'AUTO_SAVE_DATA') {
+              if (msg.saves) {
+                try {
+                  localStorage.setItem(getSaveKey(currentRealm), JSON.stringify(msg.saves));
+                  console.log(`[SoloBridge] Auto-saved vault for realm ${currentRealm}`);
+                } catch (err) {
+                  console.error('[SoloBridge] Failed to save vault:', err);
+                }
+              }
+            } else if (msg.type === 'PLAYER_CONNECTED') {
+              console.log('[SoloBridge] Player connected to GameServer session:', msg.playerIndex);
+            }
+          };
+
+          const existingSaves = loadSavedContainer(difficulty);
+          worker.postMessage({
+            action: 'INIT',
+            payload: {
+              saves: existingSaves,
+              difficulty: difficulty
+            }
+          });
+        }
+
+        window.soloBridge = {
+          flushQueue: function () {
+            while (incomingQueue.length > 0) {
+              const pkt = incomingQueue.shift();
+              deliverPacketToClient(pkt);
+            }
+          },
+          connect: function (realmMode) {
+            console.log('[SoloBridge] Client requested GameServer connect for realm:', realmMode);
+            if (!worker) {
+              pendingConnectRealm = realmMode;
+              initServerWorker(realmMode);
+              return;
+            }
+            if (!workerReady) {
+              pendingConnectRealm = realmMode;
+              return;
+            }
+            if (currentRealm !== realmMode) {
+              currentRealm = realmMode;
+              const existingSaves = loadSavedContainer(realmMode);
+              worker.postMessage({
+                action: 'SWITCH_REALM',
+                payload: {
+                  mode: realmMode,
+                  saves: existingSaves
+                }
+              });
+            }
+            worker.postMessage({
+              action: 'CONNECT_PLAYER',
+              payload: { ip: '127.0.0.1' }
+            });
+          },
+          send: function (uint8Data) {
+            if (!worker || !workerReady) {
+              console.warn('[SoloBridge] Worker not ready to send packet');
+              return;
+            }
+            worker.postMessage({
+              action: 'SEND_PACKET',
+              payload: { bytes: Array.from(uint8Data) }
+            });
+          },
+          disconnect: function () {
+            if (worker && workerReady) {
+              worker.postMessage({
+                action: 'DISCONNECT_PLAYER',
+                payload: { index: 0 }
+              });
+            }
+          }
+        };
+
+        window.soloExitGame = function () {
+          console.log('[SoloBridge] Exiting game and reloading cleanly...');
+          if (worker && workerReady) {
+            worker.postMessage({
+              action: 'DISCONNECT_PLAYER',
+              payload: { index: 0 }
+            });
+          }
+          setTimeout(function () {
+            window.location.reload();
+          }, 350);
+        };
+
+        // Pre-initialize server worker in background while assets load
+        initServerWorker(0);
+      })();
+
       var statusElement = document.getElementById('status');
       var canvasElement = document.getElementById('canvas');
       canvasElement.addEventListener('contextmenu', function (ev) { ev.preventDefault(); });
       var logElement = document.getElementById('log');
+
+      var preloader = document.getElementById('muPreloader');
+      var barFill = document.getElementById('muBarFill');
+      var statusMsg = document.getElementById('muStatusMsg');
+      var statusDetail = document.getElementById('muStatusDetail');
+      var tipMsg = document.getElementById('muTipText');
+
+      var muTips = [
+        "Use hotkeys Q, W, E to quickly drink Health and Mana potions.",
+        "Press I or V to open Inventory, and C to view Character stats.",
+        "All characters, items, and settings are saved automatically in your browser.",
+        "Press Esc to pause, change options, or safely save and exit the game.",
+        "Jewel of Bless upgrades your weapons and armor up to +6 with a 100% success rate.",
+        "Hunt Spiders and Budge Dragons outside Lorencia gates for quick early levels.",
+        "Type /post in chat to broadcast a message across the world."
+      ];
+      var tipIndex = 0;
+      var tipInterval = setInterval(function () {
+        if (!tipMsg) return;
+        tipMsg.style.opacity = '0';
+        setTimeout(function () {
+          tipIndex = (tipIndex + 1) % muTips.length;
+          tipMsg.textContent = muTips[tipIndex];
+          tipMsg.style.opacity = '1';
+        }, 300);
+      }, 4200);
+
+      function setPreloaderProgress(percent, msg, detail) {
+        if (!barFill) return;
+        var p = Math.max(2, Math.min(100, percent));
+        barFill.style.width = p + '%';
+        if (msg && statusMsg) statusMsg.textContent = msg;
+        if (detail && statusDetail) statusDetail.textContent = detail;
+      }
+
+      function finishPreloader() {
+        if (!preloader || preloader._finished) return;
+        preloader._finished = true;
+        setPreloaderProgress(100, "Entering Lorencia...", "100%");
+        clearInterval(tipInterval);
+        setTimeout(function () {
+          preloader.classList.add('fade-out');
+          setTimeout(function () {
+            preloader.style.display = 'none';
+          }, 650);
+        }, 350);
+      }
+
       var Module = {
+        HEAPU8: null,
         print: function () {
           console.log(Array.prototype.slice.call(arguments).join(' '));
         },
@@ -406,12 +790,35 @@
         },
         canvas: canvasElement,
         onRuntimeInitialized: function () {
+          finishPreloader();
+          if (window.soloBridge && window.soloBridge.flushQueue) window.soloBridge.flushQueue();
           if (window.muInstallKeys) window.muInstallKeys();
           if (window.muInstallTouch) window.muInstallTouch();
           if (window.muInstallPad) window.muInstallPad();
           if (window.muInstallAudio) window.muInstallAudio();
         },
-        setStatus: function (text) { statusElement.textContent = text; },
+        setStatus: function (text) {
+          if (statusElement) statusElement.textContent = text;
+          if (!text) {
+            finishPreloader();
+            return;
+          }
+          var m = text.match(/([^(]+)\((\d+(\.\d+)?)\/(\d+)\)/);
+          if (m) {
+            var current = parseInt(m[2]);
+            var total = parseInt(m[4]);
+            var pct = Math.round((current / total) * 100);
+            var curMb = (current / (1024 * 1024)).toFixed(1);
+            var totMb = (total / (1024 * 1024)).toFixed(1);
+            setPreloaderProgress(pct, "Downloading game assets...", curMb + " / " + totMb + " MB (" + pct + "%)");
+          } else if (text.indexOf('Preparing') !== -1) {
+            setPreloaderProgress(92, "Compiling WebAssembly engine...", "92%");
+          } else if (text.indexOf('Running') !== -1) {
+            finishPreloader();
+          } else {
+            setPreloaderProgress(50, text, "");
+          }
+        },
         preRun: [function () {
           var orig = FS.lookupPath;
           function child(node, name) {

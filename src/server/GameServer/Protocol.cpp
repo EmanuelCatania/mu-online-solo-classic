@@ -35,10 +35,15 @@
 
 void ProtocolCore(BYTE head, BYTE* lpMsg, int size, int aIndex, int encrypt, int serial)
 {
+	printf("[ProtocolCore] aIndex=%d, head=0x%02X, sub=0x%02X, size=%d, enc=%d, serial=%d\n", aIndex, head, ((lpMsg[0] == 0xC1) ? lpMsg[3] : lpMsg[4]), size, encrypt, serial);
+	fflush(stdout);
+
 	ConsoleProtocolLog(CON_PROTO_TCP_RECV, aIndex, lpMsg, size);
 
 	if (gObj[aIndex].Type == OBJECT_USER && gHackPacketCheck.CheckPacketHack(aIndex, head, ((lpMsg[0] == 0xC1) ? lpMsg[3] : lpMsg[4]), encrypt, serial) == 0)
 	{
+		printf("[ProtocolCore] CheckPacketHack REJECTED packet (head=0x%02X, sub=0x%02X)!\n", head, ((lpMsg[0] == 0xC1) ? lpMsg[3] : lpMsg[4]));
+		fflush(stdout);
 		return;
 	}
 
@@ -1162,38 +1167,46 @@ void CGConnectAccountRecv(PMSG_CONNECT_ACCOUNT_RECV* lpMsg, int aIndex)
 {
 	LPOBJ lpObj = &gObj[aIndex];
 
+	printf("[CGConnectAccountRecv] aIndex=%d, Connected=%d\n", aIndex, lpObj->Connected);
+	fflush(stdout);
+
 	if (lpObj->Connected != OBJECT_CONNECTED)
 	{
+		printf("[CGConnectAccountRecv] Failed Connected check: %d != OBJECT_CONNECTED\n", lpObj->Connected);
+		fflush(stdout);
 		CloseClient(aIndex);
-
 		return;
 	}
 
 	if (gBlackList.CheckHardwareID(lpObj->HardwareID) != 0)
 	{
+		printf("[CGConnectAccountRecv] Blacklisted HWID!\n");
+		fflush(stdout);
 		GCConnectAccountSend(aIndex, 5);
-
 		return;
 	}
 
 	if (gBlackList.CheckIpAddress(lpObj->IpAddr) != 0)
 	{
+		printf("[CGConnectAccountRecv] Blacklisted IP!\n");
+		fflush(stdout);
 		GCConnectAccountSend(aIndex, 5);
-
 		return;
 	}
 
 	if (memcmp(gServerInfo.m_ServerVersion, lpMsg->ClientVersion, sizeof(lpMsg->ClientVersion)) != 0)
 	{
+		printf("[CGConnectAccountRecv] Version mismatch! srv='%.5s' cli='%.5s'\n", gServerInfo.m_ServerVersion, lpMsg->ClientVersion);
+		fflush(stdout);
 		GCConnectAccountSend(aIndex, 6);
-
 		return;
 	}
 
 	if (memcmp(gServerInfo.m_ServerSerial, lpMsg->ClientSerial, sizeof(lpMsg->ClientSerial)) != 0)
 	{
+		printf("[CGConnectAccountRecv] Serial mismatch! srv='%.16s' cli='%.16s'\n", gServerInfo.m_ServerSerial, lpMsg->ClientSerial);
+		fflush(stdout);
 		GCConnectAccountSend(aIndex, 6);
-
 		return;
 	}
 

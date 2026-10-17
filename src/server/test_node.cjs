@@ -12,7 +12,9 @@ async function testServer() {
     }
 
     const Module = await createMuServer({
-        locateFile: (fileName) => path.join(__dirname, 'build', fileName)
+        locateFile: (fileName) => path.join(__dirname, 'build', fileName),
+        print: (txt) => console.log('[STDOUT]', txt),
+        printErr: (txt) => console.error('[STDERR]', txt)
     });
     console.log("WASM Module instantiated successfully!");
 

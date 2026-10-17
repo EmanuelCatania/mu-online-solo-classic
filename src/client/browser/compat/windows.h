@@ -11,6 +11,10 @@
 #include <time.h>
 #include <stdarg.h>
 
+#ifdef __EMSCRIPTEN__
+#include <emscripten.h>
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -370,8 +374,16 @@ static inline int recv(SOCKET s, char* b, int l, int f) { return mu_net_recv(s, 
 static inline int send(SOCKET s, const char* b, int l, int f) { return mu_net_send(s, b, l, f); }
 static inline DWORD GetCurrentDirectoryA(DWORD n, LPSTR b) { (void)n; if (b && n) b[0] = 0; return 0; }
 static inline BOOL SwapBuffers(HDC dc) { (void)dc; return 1; }
+#ifdef __cplusplus
+extern "C" {
+#endif
+LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
+#ifdef __cplusplus
+}
+#endif
+
 static inline LRESULT SendMessageA(HWND w, UINT m, WPARAM wp, LPARAM lp) {
-    (void)w; (void)m; (void)wp; (void)lp; return 0;
+    return WndProc(w, m, wp, lp);
 }
 static inline HGDIOBJ SelectObject(HDC dc, HGDIOBJ obj) {
     (void)dc;
@@ -550,8 +562,23 @@ static inline BOOL SetRect(LPRECT r, int l, int t, int ri, int b) {
     if (r) { r->left = l; r->top = t; r->right = ri; r->bottom = b; }
     return 1;
 }
-static inline BOOL DestroyWindow(HWND w) { (void)w; return 1; }
-static inline void PostQuitMessage(int c) { (void)c; }
+static inline BOOL DestroyWindow(HWND w) {
+    SendMessageA(w, 2 /* WM_DESTROY */, 0, 0);
+    return 1;
+}
+static inline void PostQuitMessage(int c) {
+    (void)c;
+#ifdef __EMSCRIPTEN__
+    emscripten_cancel_main_loop();
+    EM_ASM({
+        if (typeof window !== 'undefined' && window.soloExitGame) {
+            window.soloExitGame();
+        } else if (typeof window !== 'undefined') {
+            window.location.reload();
+        }
+    });
+#endif
+}
 static inline HCURSOR SetCursor(HCURSOR c) { (void)c; return 0; }
 static inline DWORD GetFileAttributesA(const char* p) {
     return mu_file_exists(p) ? FILE_ATTRIBUTE_NORMAL : INVALID_FILE_ATTRIBUTES;

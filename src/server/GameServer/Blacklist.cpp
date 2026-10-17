@@ -119,7 +119,7 @@ int CBlackList::CheckHardwareID(char* Hwid)
 {
 	if (strlen(Hwid) == 0)
 	{
-		return 1;
+		return 0;
 	}
 
 	for (std::vector<BLACK_LIST_HWID_INFO>::iterator it = this->m_BlacklistHWID.begin(); it != this->m_BlacklistHWID.end(); it++)

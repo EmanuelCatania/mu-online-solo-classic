@@ -50,6 +50,9 @@ The engine provides 3 dedicated game modes with completely **isolated save slots
 
 ```
 mu-online-solo-classic/
+├── docs/                           # Documentation & manuals
+│   ├── README.md                   # Documentation index
+│   └── COMMANDS.md                 # Complete Server & GM Commands Guide
 ├── src/
 │   ├── server/                     # Solo WebAssembly GameServer engine
 │   │   ├── Common/
@@ -68,24 +71,26 @@ mu-online-solo-classic/
 │   │   ├── Data/                   # Original 0.97k game tables, configs, and .att terrain maps
 │   │   ├── CMakeLists.txt          # Emscripten CMake build configuration
 │   │   └── test_node.cjs           # Node.js automated test runner for the WASM build
-│   └── client/                     # WebGL2 WebAssembly Client port
+│   └── client/                     # WebGL2 WebAssembly Client & C++ engine
+│       ├── src/                    # Full 0.97k client C++ sources (24 subsystems: Render, UI, Model, Combat, etc.)
+│       ├── lib/                    # Client libraries (miniaudio, libjpeg-6b)
 │       ├── browser/                # WebGL2 immediate-mode pipeline, virtual stick, keyboard & shell
 │       ├── docs/                   # Milestone porting specifications (M0-M7)
 │       └── link-login.bat          # Client build and link automation
 ├── web/
-│   ├── index.html                  # Interactive web dashboard & testbed GUI
+│   ├── index.html                  # Playable full-screen 3D WebGL2 Game Client & in-browser runtime
 │   ├── server_worker.js            # Dedicated Web Worker hosting the WASM GameServer
 │   ├── serve.cjs                   # Lightweight local streaming HTTP server with CORS headers
 │   ├── muserver.wasm               # Compiled GameServer WebAssembly binary (~698 KB)
 │   ├── muserver.js                 # Emscripten JavaScript runtime glue & module loader
 │   ├── muserver.data               # Preloaded virtual file system containing /Data (~1.47 MB)
-│   └── client/                     # Playable 3D WebGL2 WASM Game Client
-│       ├── index.html              # Responsive WebGL2 canvas with touch & gamepad HUD
-│       ├── shell_login.js          # Client Emscripten runtime glue
-│       ├── shell_login.wasm        # Client WebAssembly engine binary (~3.35 MB)
-│       └── shell_login.data        # Client preloaded game assets (~219 MB, git-ignored)
-└── reference/                      # (Ignored) Original reference C++ sources (Server & Client)
+│   ├── shell_login.js              # Client Emscripten runtime glue
+│   ├── shell_login.wasm            # Client WebAssembly engine binary (~1.7 MB)
+│   └── shell_login.data            # Client preloaded game assets (~219 MB)
+└── reference/                      # Reference C++ sources (Server & Client)
 ```
+
+> 📖 **In-Game Commands Guide**: For a full list of player commands (`/str`, `/agi`, `/reset`, `/evo`, `/ware`, etc.) and Game Master commands (`/make`, `/makeset`, `/makemob`, etc.), see [**`docs/COMMANDS.md`**](docs/COMMANDS.md).
 
 ---
 
@@ -159,7 +164,7 @@ cp src/server/build/muserver.* web/
 #### On Windows (PowerShell or Command Prompt):
 ```cmd
 :: Navigate to repository root
-cd /d C:\Work\_Projects\mu-online-solo-classic
+cd path\to\mu-online-solo-classic
 
 :: Configure the project with Emscripten CMake
 emcmake cmake -S src/server -B src/server/build -G Ninja -DCMAKE_BUILD_TYPE=Release
@@ -277,12 +282,27 @@ int SoloServer_GetPlayerCount();
 - [x] **Stage 5**: AES-256-GCM + SHA-256 encrypted browser persistence with standalone file export/import.
 - [x] **Stage 6**: Multi-difficulty realm system (Easy, Medium, Hard) with isolated storage and anti-trade enforcement.
 - [x] **Stage 7**: Integrate 3D WebGL2 / WebAssembly client renderer with touch controls, virtual joystick, gamepad, and audio.
-- [ ] **Stage 8**: Direct In-Memory bridge between WebGL2 Client and Solo GameServer.
+- [x] **Stage 8**: Direct In-Memory bridge connecting WebGL2 Client and in-browser GameServer worker with 3 difficulty realms and passwordless login.
 
 ---
 
-## 📜 License & Credits
+## 📜 Acknowledgements & Credits
 
-- Based on classic **MU Online 0.97k** server architecture (originally created by Webzen).
-- Ported, refactored, and adapted for WebAssembly and solo single-player mode by **Andriy Volodko**.
-- Released for educational, archival, and research purposes.
+Special thanks and sincere gratitude to the open-source projects and authors whose work made this standalone single-player recreation possible:
+
+- **[EmanuelCatania / Mu-Linux-0.97k](https://github.com/EmanuelCatania/Mu-Linux-0.97k)**:
+  Authoritative Linux C++ port of the classic MU Online 0.97k GameServer, DataServer, and protocol architecture by **Emanuel Catania**. It served as the direct reference foundation for our WebAssembly server engine and virtual VFS subsystem.
+  
+- **[EmanuelCatania / Mu-97k-Client-Source](https://github.com/EmanuelCatania/Mu-97k-Client-Source)**:
+  Meticulous C++ reverse-engineering and source reconstruction of the original Win32 MU Online 0.97k client (`main.exe`) by **Emanuel Catania**. Provided the 24 client subsystems, 3D BMD models, terrain formats, item databases, and animation pipelines ported into WebGL 2.
+
+- **[nicomuratona / MuEmu-0.97k-kayito](https://github.com/nicomuratona/MuEmu-0.97k-kayito)**:
+  Pioneering server emulation and protocol reverse engineering by **Kayito (Nico Muratona)** and the MuEmu development community.
+
+- **AI Development & Pair Programming**:
+  Engine porting, WebAssembly compilation, WebGL2 pipeline adaptations, and browser integrations were pair-programmed with assistance from **Cursor (Grok 4.7 High)** and **Google Antigravity (Gemini 3.8 Flash High)**.
+
+- **Webzen**:
+  Original creators of **MU Online** (2001–2003). All game lore, audio, 3D assets, and visual designs remain the intellectual property of Webzen.
+
+Ported, refactored, and architected for WebAssembly, WebGL2, and zero-network single-player browser gameplay by **Andriy Volodko**. Released strictly for educational, archival, and non-commercial research purposes.

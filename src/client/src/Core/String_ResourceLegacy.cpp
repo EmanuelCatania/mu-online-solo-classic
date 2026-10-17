@@ -1,0 +1,69 @@
+// String_ResourceLegacy.cpp
+
+#include "stdafx.h"
+void __fastcall FUN_0045aaa0_impl(void *_this, char flags);
+void __cdecl    FUN_00408680(void *_this, char flags);
+#include "globals.h"
+#include "functions.h"
+
+// -- Declaraciones de funciones definidas en otros modulos -------------------
+// Cloth_Integrate vive en Scene/Scene_CharSelect_Nav.cpp y Cloth_Solve en
+// Net/Crypto.cpp.
+void __fastcall Cloth_Integrate(int*, float);
+int  __cdecl    Cloth_Solve(DWORD *a1);
+
+#include "Net/Net.h"
+
+extern "C" BYTE OffsetInventoryItems[];
+extern void __cdecl operator_delete(void* ptr);
+extern void MapFileDecrypt(BYTE* buf, int size);
+
+#ifndef qmemcpy
+#define qmemcpy(dst,src,sz) memcpy((dst),(src),(size_t)(sz))
+#endif
+#ifndef delete__
+#define delete__(p) operator_delete((unsigned char*)(p))
+#endif
+#ifndef __OFSUB__
+#define __OFSUB__(x,y)       (0)
+#endif
+
+#ifndef LODWORD
+#define LODWORD(x)           (*((DWORD*)&(x)))
+#define HIDWORD(x)           (*(((DWORD*)&(x))+1))
+#define SLOBYTE(x)           (*((char*)&(x)))
+#define SLOWORD(x)           (*((short*)&(x)))
+#define SLODWORD(x)          (*((int*)&(x)))
+#endif
+#ifndef LOBYTE
+#define LOBYTE(x)            (*((unsigned char*)&(x)))
+#define HIBYTE(x)            (*(((unsigned char*)&(x))+1))
+#define LOWORD(x)            (*((unsigned short*)&(x)))
+#define HIWORD(x)            (*(((unsigned short*)&(x))+1))
+#endif
+
+
+// CRT / string helpers
+
+// mbclen @ 0x00541EAB — IsLeadByte(str)
+// DBCS lead-byte check using CRT _pctype table at DAT_083bc1a0.
+// Bit 2 of table[*str+1] set → double-byte (return 2), else single-byte (return 1).
+// Implemented via Win32 IsDBCSLeadByteEx(949) to avoid needing the 256-byte table.
+int __cdecl mbclen(const byte *param_1) {
+    return IsDBCSLeadByteEx(949, *param_1) ? 2 : 1;
+}
+// Resource_Load @ 0x0053D5A0 — Resource_Load(filename)
+// Calls Pipe_SetTarget(DAT_083bbb14, filename) if resource manager is initialized.
+// Returns non-zero on success. DAT_083bbb14 is the resource manager context pointer.
+unsigned int  __cdecl Resource_Load(char *path)
+{
+    if (DAT_083bbb14 == 0) return 0;
+    Pipe_SetTarget((void *)(ULONG_PTR)DAT_083bbb14, path);
+    return 1;
+}
+// Pipe_QueryResource @ 0x0053D5C0 — Pipe_QueryResource
+unsigned int  __cdecl Pipe_QueryResource(char *path)
+{
+    if (DAT_083bbb14 == 0) return 0;
+    return Pipe_SendQuery((void *)(ULONG_PTR)DAT_083bbb14, path);
+}

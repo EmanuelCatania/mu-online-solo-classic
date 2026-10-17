@@ -22,7 +22,12 @@ Thumbs.db
 # Reference / legacy server sources
 reference/
 
-# Client WebAssembly build outputs & large preloaded data files (> 100MB)
+# Client WebAssembly build outputs
 src/client/out/
-web/client/*.data
+src/client/proof/
 
+# Scratch & temporary artifacts
+scratch/
+
+# Large preloaded client asset bundle (> 100MB, generated during client build)
+web/shell_login.data
