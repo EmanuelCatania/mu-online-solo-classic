@@ -90,7 +90,7 @@ mu-online-solo-classic/
 └── reference/                      # Reference C++ sources (Server & Client)
 ```
 
-> 📖 **In-Game Commands Guide**: For a full list of player commands (`/str`, `/agi`, `/reset`, `/evo`, `/ware`, etc.) and Game Master commands (`/make`, `/makeset`, `/makemob`, etc.), see [**`docs/COMMANDS.md`**](docs/COMMANDS.md).
+> 📖 **In-Game Commands Guide**: For a full list of player commands (`/str`, `/agi`, `/reset`, `/ware`, `/pkclear`, etc.) and Game Master commands (`/make`, `/makeset`, `/evo`, `/makemob`, etc.), see [**`docs/COMMANDS.md`**](docs/COMMANDS.md).
 
 ---
 

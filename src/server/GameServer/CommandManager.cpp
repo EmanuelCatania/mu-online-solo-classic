@@ -534,6 +534,13 @@ bool CCommandManager::ManagementCore(LPOBJ lpObj, char* message)
 
 			break;
 		}
+
+		case COMMAND_GM:
+		{
+			this->CommandGm(lpObj, argument);
+
+			break;
+		}
 	}
 
 	lpObj->Money -= CommandData.Money[lpObj->AccountLevel];
@@ -2108,4 +2115,26 @@ void CCommandManager::CommandGMTamaStart(LPOBJ lpObj, char* arg)
 	gNotice.GCNoticeSend(lpObj->Index, 1, "Tamachan programado. Inicio en aproximadamente 2 minutos.");
 
 	gLog.Output(LOG_COMMAND, "[CommandTamaStart][%s][%s] - (InvasionIndex: %d)", lpObj->Account, lpObj->Name, tamachanIndex);
+}
+
+void CCommandManager::CommandGm(LPOBJ lpObj, char* arg)
+{
+	char mode[10] = { 0 };
+	this->GetString(arg, mode, sizeof(mode), 0);
+
+	if (_stricmp(mode, "off") == 0)
+	{
+		gGameMaster.RemoveGameMaster(lpObj);
+		lpObj->Authority = 1;
+		lpObj->AuthorityCode = 0;
+		gNotice.GCNoticeSend(lpObj->Index, 1, "[GM] Administrator mode disabled (Normal Player).");
+		gLog.Output(LOG_COMMAND, "[CommandGm][%s][%s] Deactivated Administrator", lpObj->Account, lpObj->Name);
+		return;
+	}
+
+	gGameMaster.SetGameMasterLevel(lpObj, 2);
+	lpObj->Authority = 32;
+	gObjAuthorityCodeSet(lpObj);
+	gNotice.GCNoticeSend(lpObj->Index, 1, "[GM] You are now Administrator! (All GM commands unlocked)");
+	gLog.Output(LOG_COMMAND, "[CommandGm][%s][%s] Activated Administrator (Level 2)", lpObj->Account, lpObj->Name);
 }

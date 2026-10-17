@@ -1,6 +1,7 @@
 const http = require('http');
 const fs = require('fs');
 const path = require('path');
+const os = require('os');
 
 const PORT = 8088;
 const WEB_DIR = __dirname;
@@ -87,8 +88,16 @@ function serveFileStream(filePath, stats, res, isHead) {
     stream.pipe(res);
 }
 
-server.listen(PORT, '127.0.0.1', () => {
-    console.log(`MU Online Solo Classic live at: http://127.0.0.1:${PORT}/`);
-    console.log(`- 3D WebGL2 Game Client & In-Browser Server: http://127.0.0.1:${PORT}/`);
+server.listen(PORT, '0.0.0.0', () => {
+    console.log(`MU Online Solo Classic live at:`);
+    console.log(`  > Local:   http://localhost:${PORT}/`);
+    const nets = os.networkInterfaces();
+    for (const name of Object.keys(nets)) {
+        for (const net of nets[name]) {
+            if (net.family === 'IPv4' && !net.internal) {
+                console.log(`  > Network: http://${net.address}:${PORT}/ (${name})`);
+            }
+        }
+    }
 });
 

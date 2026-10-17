@@ -113,6 +113,17 @@ async function testServer() {
         Module._SoloServer_Tick(100);
     }
 
+    // Send /gm command: C1 49 00 [name 10 bytes] [message 60 bytes]
+    console.log("\n6. Sending /gm cheat command...");
+    const chatPacket = new Uint8Array(73);
+    chatPacket[0] = 0xC1;
+    chatPacket[1] = 73;
+    chatPacket[2] = 0x00;
+    for (let i = 0; i < nameStr.length; i++) chatPacket[3 + i] = nameStr.charCodeAt(i);
+    const cmdStr = "/gm";
+    for (let i = 0; i < cmdStr.length; i++) chatPacket[13 + i] = cmdStr.charCodeAt(i);
+    sendPacket(chatPacket);
+
     console.log("\n=== ALL TESTS PASSED SUCCESSFULLY! ===");
 }
 

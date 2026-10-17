@@ -17,7 +17,6 @@ Commands are typed directly into the standard in-game chat input box (press `Ent
    - [Automated Reset Loop (`/reset auto`)](#automated-reset-loop)
    - [Grand Reset (`/grandreset`)](#grand-reset)
    - [PK / Murderer Clear (`/pkclear`)](#pk--murderer-clear)
-   - [Class Evolution (`/evo`)](#class-evolution)
    - [Multi-Vault Warehouse (`/ware`)](#multi-vault-warehouse)
    - [Inventory Cleaner (`/clearinv`)](#inventory-cleaner)
    - [Map Teleportation (`/move`)](#map-teleportation)
@@ -25,9 +24,11 @@ Commands are typed directly into the standard in-game chat input box (press `Ent
    - [Request Filters & Auto-Party (`/re`)](#request-filters--auto-party)
    - [Guild Warfare (`/war`, `/soccer`)](#guild-warfare)
    - [Online Status (`/onlines`)](#online-status)
+   - [Admin Cheat Toggle (`/gm`)](#admin-cheat-toggle)
 4. [Game Master (GM) & Admin Commands](#4-game-master-gm--admin-commands)
    - [GM Authorization & Configuration](#gm-authorization--configuration)
    - [Zen Management (`/addmoney`, `/submoney`)](#zen-management)
+   - [Character Evolution (`/evo`)](#character-evolution)
    - [Moderation & Teleportation (`/gmove`, `/gmoveall`, `/chase`, `/bring`, `/disconnect`)](#moderation--teleportation)
    - [Item Creation & Spawning (`/make`, `/makeset`, `/drop`)](#item-creation--spawning)
    - [Monster Spawning & Morphing (`/makemob`, `/skin`)](#monster-spawning--morphing)
@@ -62,7 +63,6 @@ Commands are typed directly into the standard in-game chat input box (press `Ent
 | `/reset auto` | `<str> <agi> <vit> <ene>` | Enable automated reset upon reaching max level with auto-stat distribution (re-type to disable). |
 | `/grandreset` | *none* | Perform a Grand Reset once reset milestone is reached. |
 | `/pkclear` | *none* | Cleanse PK status (murderer / outlaw) back to normal citizen. |
-| `/evo` | *none* | Instantly complete 2nd class change quest (DK -> BK, DW -> SM, Elf -> ME). |
 | `/ware` | `<0..4>` | Switch active warehouse vault to store additional items. |
 | `/clearinv` | *none* | Clears all unequipped items from your inventory bags (equipped gear is safe). |
 | `/move` | `<MapName>` | Teleport to a designated city or dungeon (e.g. `/move Lorencia`). |
@@ -71,6 +71,7 @@ Commands are typed directly into the standard in-game chat input box (press `Ent
 | `/war` | `<GuildName>` | Declare a Guild War against an opposing guild. |
 | `/soccer` | `<GuildName>` | Challenge an opposing guild to Battle Soccer in Arena. |
 | `/onlines` | *none* | Display the current count of online characters. |
+| `/gm` | `[on \| off]` | Cheat command to instantly grant or revoke Administrator (GM Level 2) rights. |
 
 ### Game Master (GM) Commands
 
@@ -78,6 +79,7 @@ Commands are typed directly into the standard in-game chat input box (press `Ent
 | :--- | :--- | :--- |
 | `/addmoney` | `<amount>` | Add Zen to character inventory (up to 2,000,000,000). |
 | `/submoney` | `<amount>` | Deduct Zen from character inventory. |
+| `/evo` | *none* | Instantly complete 2nd class change quest for GM (DK -> BK, DW -> SM, Elf -> ME). |
 | `/global` | `<message>` | Broadcast a yellow GM announcement across the server. |
 | `/fireworks` | *none* | Spawn 15 colorful celebratory fireworks around the GM. |
 | `/chase` | `<player>` | Teleport yourself directly to the player's current coordinates. |
@@ -213,20 +215,6 @@ If your character has killed other players and obtained Outlaw / Murderer status
 
 - Instantly resets your status back to `Commoner` (normal name color).
 
-### Class Evolution
-
-Instantly completes the Sebina the Priestess quest line (Quest 1 and Quest 2) without needing to search for the *Scroll of Emperor*, *Broken Sword*, *Tear of Elf*, or *Soul Shard of Wizard*.
-
-```text
-/evo
-```
-
-- **Eligible Classes**:
-  - Dark Knight ➔ **Blade Knight**
-  - Dark Wizard ➔ **Soul Master**
-  - Fairy Elf ➔ **Muse Elf**
-- Magic Gladiators (MG) are already advanced classes and do not require this command.
-
 ### Multi-Vault Warehouse
 
 MU Online Solo Classic provides up to **5 independent vaults** per character difficulty slot, allowing you to organize items, sets, and jewels.
@@ -309,6 +297,18 @@ Commands available to Guild Masters:
 
 - Displays the total number of connected players currently active in the realm.
 
+### Admin Cheat Toggle
+
+Instant cheat command to grant or revoke full Game Master / Administrator rights without editing server configuration files.
+
+```text
+/gm
+/gm off
+```
+
+- `/gm` — Instantly grants **Administrator (Level 2)** status to your current character and unlocks all GM commands (`/make`, `/makeset`, `/evo`, `/addmoney`, `/makemob`, `/skin`, etc.).
+- `/gm off` — Reverts character status back to a normal player.
+
 ---
 
 ## 4. Game Master (GM) & Admin Commands
@@ -340,6 +340,23 @@ end
 
 - `/addmoney 100000000` — Adds 100,000,000 Zen to your character (maximum wallet capacity is 2,000,000,000 Zen).
 - `/submoney 50000000` — Deducts 50,000,000 Zen from your character.
+
+---
+
+### Character Evolution
+
+Instantly completes the Sebina the Priestess quest line (Quest 1 and Quest 2) for testing without needing to search for quest items. Restricted to **Game Masters (GM Level 1+)**.
+
+```text
+/evo
+```
+
+- **Eligible Classes**:
+  - Dark Knight ➔ **Blade Knight**
+  - Dark Wizard ➔ **Soul Master**
+  - Fairy Elf ➔ **Muse Elf**
+- Magic Gladiators (MG) are already advanced classes and do not require this command.
+- Normal players attempting to execute `/evo` receive an access denied notice (`Message 57`).
 
 ---
 

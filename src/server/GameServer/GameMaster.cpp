@@ -87,6 +87,7 @@ void CGameMaster::SetGameMasterLevel(LPOBJ lpObj, int level)
 	{
 		if (strcmp(this->m_GameMasterInfo[n].Account, lpObj->Account) == 0 && strcmp(this->m_GameMasterInfo[n].Name, lpObj->Name) == 0)
 		{
+			this->m_GameMasterInfo[n].Level = level;
 			return;
 		}
 	}
@@ -100,6 +101,18 @@ void CGameMaster::SetGameMasterLevel(LPOBJ lpObj, int level)
 	info.Level = level;
 
 	this->SetInfo(info);
+}
+
+void CGameMaster::RemoveGameMaster(LPOBJ lpObj)
+{
+	for (int n = 0; n < this->m_count; n++)
+	{
+		if (strcmp(this->m_GameMasterInfo[n].Account, lpObj->Account) == 0 && strcmp(this->m_GameMasterInfo[n].Name, lpObj->Name) == 0)
+		{
+			this->m_GameMasterInfo[n].Level = 0;
+			return;
+		}
+	}
 }
 
 bool CGameMaster::CheckGameMasterLevel(LPOBJ lpObj, int level)

@@ -25,6 +25,8 @@ public:
 
 	void SetGameMasterLevel(LPOBJ lpObj, int level);
 
+	void RemoveGameMaster(LPOBJ lpObj);
+
 	bool CheckGameMasterLevel(LPOBJ lpObj, int level);
 
 private:
