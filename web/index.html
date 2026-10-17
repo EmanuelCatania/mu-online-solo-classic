@@ -421,7 +421,7 @@
         <div class="header-controls">
             <!-- LocalStorage Status Pill -->
             <div class="save-indicator">
-                <span class="storage-pill">LocalStorage</span>
+                <span class="storage-pill">🔒 LocalStorage (AES-256)</span>
                 <span id="saveStatus">Готово</span>
             </div>
 
@@ -604,8 +604,9 @@
                 const raw = localStorage.getItem(STORAGE_KEY);
                 if (raw) {
                     const parsed = JSON.parse(raw);
-                    const count = Object.keys(parsed).length;
-                    document.getElementById('saveCountBadge').textContent = `${count} файл(ів)`;
+                    const count = parsed.filesCount !== undefined ? parsed.filesCount : Object.keys(parsed).length;
+                    const enc = parsed.encrypted ? ' 🔒' : '';
+                    document.getElementById('saveCountBadge').textContent = `${count} файл(ів)${enc}`;
                 } else {
                     document.getElementById('saveCountBadge').textContent = '0 файлів';
                 }
@@ -674,8 +675,9 @@
                 const stored = localStorage.getItem(STORAGE_KEY);
                 if (stored) {
                     initialSaves = JSON.parse(stored);
-                    const count = Object.keys(initialSaves).length;
-                    appendLog(`Знайдено збереження у LocalStorage (${count} файлів)`, '#34d399');
+                    const count = initialSaves.filesCount !== undefined ? initialSaves.filesCount : Object.keys(initialSaves).length;
+                    const enc = initialSaves.encrypted ? ' (Захищено AES-256-GCM + SHA-256)' : '';
+                    appendLog(`Знайдено збереження у LocalStorage (${count} файлів${enc})`, '#34d399');
                     updateSaveStatus(`Завантажено (${count} файлів)`);
                 } else {
                     appendLog('Збережень у LocalStorage ще немає (перший запуск)', '#94a3b8');
@@ -712,10 +714,11 @@
                     // Automatically persist to LocalStorage
                     try {
                         localStorage.setItem(STORAGE_KEY, JSON.stringify(saves));
-                        const fileCount = Object.keys(saves).length;
+                        const fileCount = saves.filesCount !== undefined ? saves.filesCount : Object.keys(saves).length;
                         updateSaveStatus(`Автосейв (${fileCount} ф.)`, '#34d399');
                         updateSaveCountBadge();
-                        appendLog(`[AutoSave] Гра збережена у LocalStorage (${fileCount} файлів)`, '#34d399');
+                        const hashSnippet = saves.checksum ? ` (SHA-256: ${saves.checksum.substring(0, 8)}...)` : '';
+                        appendLog(`[AutoSave] Гра зашифрована та збережена у LocalStorage 🔒 (${fileCount} файлів${hashSnippet})`, '#34d399');
                     } catch (err) {
                         appendLog(`[AutoSave] Помилка запису в LocalStorage: ${err.message}`, '#ef4444');
                     }
@@ -727,10 +730,10 @@
                         // Manual Save to LocalStorage
                         try {
                             localStorage.setItem(STORAGE_KEY, JSON.stringify(saves));
-                            const fileCount = Object.keys(saves).length;
+                            const fileCount = saves.filesCount !== undefined ? saves.filesCount : Object.keys(saves).length;
                             updateSaveStatus(`Збережено (${fileCount} ф.)`, '#34d399');
                             updateSaveCountBadge();
-                            appendLog(`[Manual Save] Сейв успішно оновлено у LocalStorage!`, '#34d399');
+                            appendLog(`[Manual Save] Стан гри зашифровано (AES-256-GCM) та збережено у LocalStorage! 🔒`, '#34d399');
                             const btn = document.getElementById('btnManualSave');
                             if (btn) {
                                 const old = btn.textContent;
@@ -742,17 +745,25 @@
                         }
                     }
                 } else if (type === 'SAVES_IMPORTED') {
-                    updateSaveStatus(`Сейв відновлено (${count} ф.)`, '#34d399');
-                    updateSaveCountBadge();
-                    appendLog(`[Manual Load] Успішно відновлено ${count} файл(ів) у пам'ять сервера!`, '#34d399');
-                    const btn = document.getElementById('btnManualLoad');
-                    if (btn) {
-                        const old = btn.textContent;
-                        btn.textContent = '✅ Завантажено!';
-                        setTimeout(() => { btn.textContent = old; }, 1500);
+                    if (count > 0) {
+                        updateSaveStatus(`Сейв відновлено (${count} ф.)`, '#34d399');
+                        updateSaveCountBadge();
+                        appendLog(`[Manual Load] Успішно дешифровано та відновлено ${count} файл(ів)! 🔓`, '#34d399');
+                        const btn = document.getElementById('btnManualLoad');
+                        if (btn) {
+                            const old = btn.textContent;
+                            btn.textContent = '✅ Завантажено!';
+                            setTimeout(() => { btn.textContent = old; }, 1500);
+                        }
+                        // Automatically refresh character list
+                        requestCharList();
+                    } else {
+                        updateSaveStatus('Помилка', '#ef4444');
+                        appendLog(`[Manual Load] Не вдалося завантажити сейв (0 файлів відновлено)`, '#ef4444');
                     }
-                    // Automatically refresh character list
-                    requestCharList();
+                } else if (type === 'SAVE_INTEGRITY_ERROR') {
+                    appendLog(`[Помилка цілісності] ⚠️ ${message}`, '#ef4444');
+                    alert(`Увага! Сейв не вдалося завантажити:\n\n${message}`);
                 } else if (type === 'ERROR') {
                     appendLog(`Server Error: ${message}`, '#ef4444');
                 }
@@ -812,7 +823,7 @@
             const a = document.createElement('a');
             const date = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-');
             a.href = url;
-            a.download = `mu_solo_classic_save_${date}.json`;
+            a.download = `mu_solo_classic_save_${date}.musav.json`;
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
