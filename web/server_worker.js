@@ -98,9 +98,7 @@ function writeVirtualSaveFiles(savesMap) {
 async function exportEncryptedSaves() {
     const rawFiles = readVirtualSaveFiles();
     const fileCount = Object.keys(rawFiles).length;
-    if (fileCount === 0) {
-        return null;
-    }
+
 
     try {
         const key = await getVaultKey();
@@ -385,6 +383,8 @@ self.onmessage = async function (e) {
             self.postMessage({
                 type: 'SAVES_EXPORTED',
                 saves: saves,
+                realm: payload?.realm,
+                reason: payload?.reason,
                 timestamp: Date.now()
             });
             break;
