@@ -1,10 +1,14 @@
 # MU Online Solo Classic (0.97k) - WebAssembly Server & Engine
 
+[![Play Online](https://img.shields.io/badge/Play%20Online-GitHub%20Pages-2ea44f?style=for-the-badge&logo=github&logoColor=white)](https://andvolodko.github.io/mu-online-solo-classic/)
+
 [![WebAssembly](https://img.shields.io/badge/WebAssembly-WASM-654FF0?logo=webassembly&logoColor=white)](https://webassembly.org/)
 [![C++17](https://img.shields.io/badge/C%2B%2B-17-00599C?logo=c%2B%2B&logoColor=white)](https://isocpp.org/)
 [![Emscripten](https://img.shields.io/badge/Emscripten-3.x-red)](https://emscripten.org/)
 [![Status](https://img.shields.io/badge/Server-100%25%20Client--Side-brightgreen)](https://github.com/andvolodko/mu-online-solo-classic)
 
+> 🎮 **Play Live in Browser:** **[https://andvolodko.github.io/mu-online-solo-classic/](https://andvolodko.github.io/mu-online-solo-classic/)**
+>
 > A complete, standalone **MU Online Season 0.97k GameServer engine** compiled to **WebAssembly (WASM)** via **Emscripten** for pure client-side solo gameplay directly in modern web browsers.
 
 ---
@@ -202,9 +206,13 @@ node src/server/test_node.cjs
 
 ---
 
-## 🚀 Running the Web Dashboard & Testbed
+## 🚀 Running the Web Game & Dashboard
 
-To test the WebAssembly server in a browser with the live GUI dashboard:
+### 🌐 Play Online (No Installation Required)
+Directly in modern browsers: **[https://andvolodko.github.io/mu-online-solo-classic/](https://andvolodko.github.io/mu-online-solo-classic/)**
+
+### 💻 Local Development Server
+To run locally on your machine:
 
 ```bash
 # Start the local development server (port 8088)
