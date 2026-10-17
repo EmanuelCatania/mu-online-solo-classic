@@ -18,3 +18,6 @@ Thumbs.db
 
 # Logs
 *.log
+
+# Reference / legacy server sources
+reference/
