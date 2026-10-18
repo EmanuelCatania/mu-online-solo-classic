@@ -551,12 +551,9 @@ LAB_00473578_498:
                     (float)*(int *)(param_1 + 0x9b8) * _DAT_00552540;
                 float t_raw = (float)(*(int *)(param_1 + 0x9b8) + -10) * _DAT_00552a00;
                 float t;
-                if ((_DAT_0055256c <= t_raw) || (_DAT_00552580 <= t_raw)) {
-                    t = (_DAT_0055256c <= t_raw) ? 1.0f : 0.0f;
-                }
-                else {
-                    t = 0.0f;
-                }
+                if (t_raw >= _DAT_0055256c)      t = _DAT_0055256c;
+                else if (t_raw >= _DAT_00552580) t = t_raw;
+                else                             t = 0.0f;
                 float inv_t = _DAT_0055256c - t;
                 Ring_ComputeOrbit(param_2 * 0x4539, local_d8, 1.4f);
                 iVar16 = *(int *)(param_1 + 0x40);
@@ -816,9 +813,9 @@ LAB_0047036e:
                 if (lifetime_4e5_2 > 18 && lifetime_4e5_2 < 20) {
                     float rotation_4e5_2[3] = { 0.0f, 0.0f, (float)(rand() % 360) };
                     float position_4e5_2[3] = {
-                        (float)(rand() % 200) + *(float *)(param_1 + 0x28) - 100.0f,
-                        (float)(rand() % 200) + *(float *)(param_1 + 0x2c) - 100.0f,
-                        *(float *)(param_1 + 0x30) - 200.0f
+                        (float)(rand() % 200) + *(float *)(param_1 + 0x1c) - 100.0f,
+                        (float)(rand() % 200) + *(float *)(param_1 + 0x20) - 100.0f,
+                        *(float *)(param_1 + 0x24) - 200.0f
                     };
                     Joint_Create(1249, position_4e5_2, position_4e5_2, rotation_4e5_2,
                                   2, 0, 40.0f, -1, 0);
