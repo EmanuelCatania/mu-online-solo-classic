@@ -168,6 +168,7 @@
           <button class="mu-tab-btn" data-tab="tabRealms">⚔️ Server Realms</button>
           <button class="mu-tab-btn" data-tab="tabSaves">💾 Save System</button>
           <button class="mu-tab-btn" data-tab="tabTips">💎 Upgrading & Tips</button>
+          <button class="mu-tab-btn" data-tab="tabAbout">👤 About & Author</button>
         </div>
 
         <!-- Modal Scrollable Body -->
@@ -408,11 +409,69 @@
               </div>
             </div>
           </div>
+
+          <!-- Tab 6: About & Author -->
+          <div id="tabAbout" class="mu-tab-pane">
+            <h3 class="mu-section-title">👤 About MU Online Solo Classic</h3>
+            <p class="mu-section-sub">A standalone WebAssembly recreation of classic MU Online 0.97k for pure client-side solo play with zero latency and no external server required.</p>
+
+            <div class="mu-about-container">
+              <!-- Author Card -->
+              <div class="mu-guide-card mu-author-card">
+                <div class="mu-author-header">
+                  <div class="mu-author-avatar-wrap">
+                    <img src="https://github.com/andvolodko.png" alt="Andrii" class="mu-author-avatar" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                    <div class="mu-author-avatar-fallback" style="display:none;">A</div>
+                  </div>
+                  <div class="mu-author-details">
+                    <h4 class="mu-author-name">Andrii</h4>
+                    <span class="mu-author-handle">@andvolodko</span>
+                    <p class="mu-author-bio">Creator & Lead Developer of MU Online Solo Classic. Passionate about WebAssembly systems engineering, retro gaming preservation, and high-performance in-browser runtimes.</p>
+                  </div>
+                </div>
+
+                <div class="mu-about-actions">
+                  <a href="https://github.com/andvolodko" target="_blank" rel="noopener noreferrer" class="mu-about-btn mu-btn-primary">
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+                      <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/>
+                    </svg>
+                    <span>Follow @andvolodko on GitHub</span>
+                  </a>
+                  <a href="https://github.com/andvolodko/mu-online-solo-classic" target="_blank" rel="noopener noreferrer" class="mu-about-btn">
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+                      <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+                    </svg>
+                    <span>Star Project on GitHub ⭐</span>
+                  </a>
+                </div>
+              </div>
+
+              <!-- Tech Highlights Card -->
+              <div class="mu-guide-card">
+                <div class="mu-guide-card-head">Technology & Architecture</div>
+                <ul class="mu-tips-list">
+                  <li><strong>WebAssembly Monolith:</strong> C++17 GameServer & WebGL engine compiled directly into WASM via Emscripten.</li>
+                  <li><strong>Zero Latency (0 ms):</strong> In-memory binary packet channel running in dedicated Web Worker threads at 20 TPS.</li>
+                  <li><strong>Cryptographic Local Vault:</strong> AES-256-GCM encryption with SHA-256 integrity checks for offline character and warehouse saves.</li>
+                  <li><strong>Legal & Credits:</strong> Created for educational and retro gaming preservation purposes. Original MU Online game assets, lore, and audio &copy; Webzen.</li>
+                </ul>
+              </div>
+            </div>
+          </div>
         </div>
 
         <!-- Modal Footer -->
         <div class="mu-modal-footer">
-          <span class="mu-modal-foot-tip">💡 Tip: Press <kbd>Enter</kbd> in-game anytime to open chat and type player commands.</span>
+          <div class="mu-modal-foot-left">
+            <span class="mu-modal-foot-tip">💡 Tip: Press <kbd>Enter</kbd> in-game anytime to open chat and type player commands.</span>
+            <span class="mu-modal-foot-sep">&bull;</span>
+            <a href="https://github.com/andvolodko" target="_blank" rel="noopener noreferrer" class="mu-modal-author-link" title="Author GitHub Profile">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/>
+              </svg>
+              <span>Created by <strong>@andvolodko</strong></span>
+            </a>
+          </div>
           <button id="muModalCloseFooter" class="mu-top-btn" type="button">Close Guide</button>
         </div>
       </div>
