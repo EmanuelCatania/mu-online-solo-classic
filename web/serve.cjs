@@ -15,6 +15,7 @@ const MIME_TYPES = {
     '.json': 'application/json; charset=utf-8',
     '.musav': 'application/json; charset=utf-8',
     '.png': 'image/png',
+    '.ico': 'image/x-icon',
     '.jpg': 'image/jpeg',
     '.jpeg': 'image/jpeg',
     '.mp3': 'audio/mpeg',
@@ -24,11 +25,6 @@ const MIME_TYPES = {
 const server = http.createServer((req, res) => {
     // Strip query string
     const cleanUrl = req.url.split('?')[0];
-    if (cleanUrl === '/favicon.ico') {
-        res.writeHead(204);
-        res.end();
-        return;
-    }
 
     let filePath = path.join(WEB_DIR, cleanUrl === '/' ? 'index.html' : cleanUrl);
     const isHead = req.method === 'HEAD';
